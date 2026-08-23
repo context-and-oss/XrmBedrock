@@ -16,7 +16,7 @@
     "postbuild": "node esbuild.config.mjs"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
+    "concurrently": "^9.2.4",
     "esbuild": "^0.25.5",
     "glob": "^11.0.2",
     "typescript": "^5.8.3"
