@@ -1,25 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup Label="Configuration">
-    <!-- Custom properties, can be left as-is or removed if not needed -->
-  </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>net462</TargetFramework>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
+
   <Target Name="NpmBuild" BeforeTargets="Build">
     <Exec Command="npm install" WorkingDirectory="$(ProjectDir)" />
+    <Exec Command="npm run typecheck" WorkingDirectory="$(ProjectDir)" />
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)" />
-    <Exec Command="npm run postbuild" WorkingDirectory="$(ProjectDir)" />
   </Target>
-  <Target Name="NpmClean" BeforeTargets="Clean" Condition="'$(IsRebuild)' != 'true'">
-    <Exec Command="npm run clean" WorkingDirectory="$(ProjectDir)" />
-  </Target>
-  <Target Name="NpmCleanAll" BeforeTargets="Clean" Condition="'$(IsRebuild)' == 'true'">
-    <Exec Command="npm run clean-all" WorkingDirectory="$(ProjectDir)" />
-  </Target>
-  <Target Name="NpmCleanAfterBuild" AfterTargets="Build">
+
+  <Target Name="NpmClean" BeforeTargets="Clean">
     <Exec Command="npm run clean" WorkingDirectory="$(ProjectDir)" />
   </Target>
 </Project>

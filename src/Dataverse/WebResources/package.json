@@ -1,24 +1,25 @@
 {
   "name": "webresources",
   "version": "1.0.0",
-  "description": "Webresources for XrmBedrock",
-  "repository": {
-    "type": "git",
-    "url": ""
-  },
-  "license": "UNLICENSED",
-  "author": "DG",
+  "private": true,
+  "type": "module",
+  "description": "HTML web resources and form scripts for XrmBedrock",
   "scripts": {
-    "concurrently": "concurrently",
-    "clean": "git clean -fXd -e \\!node_modules -e \\!node_modules/**/* ./src/templatepublisherprefix_templateprojectname/out",
-    "clean-all": "git clean -fXd -e \\!node_modules -e \\!node_modules/**/* ./src/templatepublisherprefix_templateprojectname ./src/templatepublisherprefix_templateprojectname/out",
-    "build": "tsc",
-    "postbuild": "node esbuild.config.mjs"
+    "dev": "node dev.mjs",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "typings": "cd ../../.. && dotnet tool restore && dotnet xdt",
+    "check": "npm run typecheck && npm run build && cd ../../.. && dotnet xrmsync config validate",
+    "deploy": "npm run build && cd ../../.. && dotnet tool restore && dotnet xrmsync --profile webresources"
+  },
+  "dependencies": {
+    "@delegateas/xrmquery": "7.0.0-preview.3"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
-    "esbuild": "^0.25.5",
-    "glob": "^11.0.2",
-    "typescript": "^5.8.3"
+    "@types/xrm": "^9.0.96",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.9.0"
   }
 }

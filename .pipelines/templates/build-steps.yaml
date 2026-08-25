@@ -1,3 +1,8 @@
+parameters:
+  - name: dataverseServiceConnection
+    type: string
+    default: DEV
+
 steps:
   - task: DotNetCoreCLI@2
     displayName: 'dotnet restore'
@@ -19,8 +24,20 @@ steps:
   - script: '"$(FsiPath)" "$(DaxifPath)/GenerateCSharpContext.fsx" $(AuthParams)'
     displayName: 'Update C# context'
 
-  - script: '"$(FsiPath)" "$(DaxifPath)/GenerateTypeScriptContext.fsx" $(AuthParams)'
-    displayName: 'Update TS context'
+  - task: AzureCLI@2
+    displayName: 'Update TypeScript form and Web API typings'
+    inputs:
+      azureSubscription: ${{ parameters.dataverseServiceConnection }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az account show --output none
+        dotnet tool restore
+        dotnet xdt
+      workingDirectory: '$(Build.SourcesDirectory)'
+    env:
+      DATAVERSE_URL: $(DataverseUrl)
+      DATAVERSE_CREDENTIAL_TYPE: azcli
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet build'
