@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.6537497">
+  <PropertyGroup>
+    <BuildCommand>npm run typecheck &amp;&amp; npm run build</BuildCommand>
+    <CleanCommand>npm run clean</CleanCommand>
+    <StartupCommand>npm run dev</StartupCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Remove="@(PackageReference)" />
+  </ItemGroup>
+</Project>
