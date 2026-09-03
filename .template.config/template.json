@@ -161,6 +161,7 @@
             "**/node_modules/**",
             "src/Azure/**/bin/**",
             "src/Dataverse/**/bin/**",
+            "src/Dataverse/WebResources/dist/**",
             "src/Shared/**/bin/**",
             "test/**/bin/**",
             "Setup/InitialSetup/**",

@@ -75,12 +75,85 @@ To uninstall the template: `dotnet new uninstall .`
 
 # Regenerating Dataverse Context
 
-The Dataverse context files (C# proxies, TypeScript typings, and test metadata) are generated from your Dataverse environment during post-template setup using the F# scripts in `src/Tools/Daxif/`. You can regenerate them at any time:
+The Dataverse C# proxies and TypeScript typings are generated from your development environment during post-template setup. Regenerate them at any time with:
 
 ```bash
 dotnet fsi src/Tools/Daxif/GenerateCSharpContext.fsx
-dotnet fsi src/Tools/Daxif/GenerateTypeScriptContext.fsx
+cd src/Dataverse/WebResources && npm run typings
 ```
+
+The TypeScript command runs the root-pinned XrmDefinitelyTyped tool and generates both form and Web API declarations into `src/Dataverse/WebResources/typings`.
+
+# Dataverse web resources
+
+`src/Dataverse/WebResources` now supports both HTML web resources and form scripts:
+
+- Put a self-contained page in `src/Dataverse/WebResources/src/html/<name>/` with `index.html`,
+  `main.ts`, and `styles.css`. The build produces `dist/<name>.html`, embedding the script, styles,
+  and imported assets in one file.
+- Put form handlers in `src/Dataverse/WebResources/src/forms/<name>.ts`. The build produces
+  `dist/forms/<name>.js` and exposes exported functions below
+  `templatecompanyname.templateprojectname.FormScripts.<Name>`.
+
+The root `appsettings.json` is shared by XrmDefinitelyTyped, XrmSync, and dvspec. Generate both the
+form typings and XrmQuery Web API typings, then build or deploy:
+
+```bash
+cd src/Dataverse/WebResources
+npm run typings
+npm run dev       # rebuild and sync on save
+npm run typecheck
+npm run build
+npm run deploy
+```
+
+HTML code can import `@delegateas/xrmquery`; form scripts keep the generated
+`Form.<table>.<type>.<form>` and `Xrm` declarations. See
+`src/Dataverse/WebResources/README.md` for the source and output conventions.
+
+# Declarative Dataverse metadata
+
+The template pins the `dvspec` .NET tool and includes `.dvspec/config.json`, but it does not
+create a metadata spec. When a metadata task needs one, create a temporary root `spec.yaml` with the
+objects involved in that change. Root `spec.yaml`, `spec.yml`, and `spec.json` files are git-ignored
+by default so metadata can also be changed through make.powerapps.com without treating the
+repository as the authoritative desired state.
+
+A minimal local spec starts like this:
+
+```yaml
+version: 1
+target:
+  environment: Production
+  solution: templatesolutionname
+  publisherPrefix: templatepublisherprefix
+  language: 1033
+```
+
+Then use the CLI to validate, inspect, preview, plan, and apply the change:
+
+```bash
+dotnet tool restore
+dotnet dvspec describe account --json
+dotnet dvspec validate --spec spec.yaml
+dotnet dvspec plan --spec spec.yaml
+dotnet dvspec preview --spec spec.yaml
+dotnet dvspec apply --spec spec.yaml --yes
+```
+
+Names in a spec are unprefixed; dvspec applies the publisher prefix from `.dvspec/config.json`.
+Use `dvspec describe` or `dvspec fetch` to inspect existing metadata before authoring changes.
+Connection settings come from the root `appsettings.json`, while secrets should be supplied through
+environment variables. Generated planning state (`baseline.json`, `plan.latest.json`, and
+`.dvspec/cache/`) is also ignored by git.
+
+Teams with a development-heavy, desired-state workflow can opt in to versioning the spec explicitly:
+
+```bash
+git add -f spec.yaml
+```
+
+Once committed, normal edits to that file remain tracked.
 
 # Azure Setup
 
