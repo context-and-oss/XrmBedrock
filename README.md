@@ -36,7 +36,7 @@ To produce the deployable, merged and signed DLL, opt in with the `PackAndSignPl
 dotnet build src/Dataverse/Plugins/Plugins.csproj -c Release -p:PackAndSignPlugin=true
 ```
 
-**Caveat:** the Daxif deploy scripts expect `ILMerged.templatecompanyname.templateprojectname.Dataverse.Plugins.dll`, which is produced **only** when `-p:PackAndSignPlugin=true` is passed. A plain build does not produce it, so build with the flag before deploying the plugin locally. The pipeline already passes this flag, so CI output is unchanged.
+**Caveat:** the Daxif deploy scripts expect `Merged.templatecompanyname.templateprojectname.Dataverse.Plugins.dll`, which is produced **only** when `-p:PackAndSignPlugin=true` is passed. A plain build does not produce it, so build with the flag before deploying the plugin locally. The pipeline already passes this flag, so CI output is unchanged.
 
 # Quick start (dotnet new)
 
@@ -52,7 +52,7 @@ dotnet build src/Dataverse/Plugins/Plugins.csproj -c Release -p:PackAndSignPlugi
    dotnet new xrmbedrock -n MyProject \
      --company-name MyOrg \
      --publisher-prefix abc \
-     --solution-id mysol \
+     --solution mysol \
      --dev-url https://myorg-dev.crm4.dynamics.com \
      --test-url https://myorg-test.crm4.dynamics.com \
      --uat-url https://myorg-uat.crm4.dynamics.com \
@@ -61,6 +61,8 @@ dotnet build src/Dataverse/Plugins/Plugins.csproj -c Release -p:PackAndSignPlugi
      --cert-password MySecurePassword123 \
      --username user@myorg.onmicrosoft.com
    ```
+
+   > The `\` line continuations are bash syntax; in PowerShell use a backtick (`` ` ``) instead.
 
 3. Post-setup runs automatically (generates a strong name key, plugin signing certificate, restores tools, installs npm packages, and generates Dataverse context files). 
    You will be prompted to authenticate with your Dataverse environment via a browser popup. Requires [PowerShell Core](https://github.com/PowerShell/PowerShell) (`pwsh`).
