@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "environment": "Production",
+  "solution": "templatesolutionname",
+  "publisherPrefix": "templatepublisherprefix",
+  "language": 1033
+}

@@ -388,3 +388,20 @@ MigrationBackup/
 # Mac
 .DS_Store
 /src/Tools/Daxif/username.txt
+
+# Modern Dataverse tooling
+# Metadata specs are disposable by default so maker-portal changes remain supported.
+# Teams using dvspec as their source of truth can force-add the chosen file.
+/spec.yaml
+/spec.yml
+/spec.json
+/appsettings.*.json
+!/appsettings.json
+/.dvspec/baseline.json
+/.dvspec/plan.latest.json
+/.dvspec/cache/
+/src/Dataverse/WebResources/dist/
+/src/Dataverse/WebResources/node_modules/
+/src/Dataverse/WebResources/typings/*
+!/src/Dataverse/WebResources/typings/jquery/
+!/src/Dataverse/WebResources/typings/jquery/jquery.d.ts

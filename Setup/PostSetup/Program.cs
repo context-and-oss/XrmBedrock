@@ -33,10 +33,10 @@ Log("A browser window will open for OAuth authentication with your dev Dataverse
 Log("Complete the login in the browser to continue.");
 RunCommand("dotnet", "fsi src/Tools/Daxif/GenerateCSharpContext.fsx");
 
-Step(5, "Generating Dataverse TypeScript context (requires browser login)");
+Step(5, "Generating Dataverse form and Web API TypeScript typings (requires browser login)");
 Log("A second browser window will open for OAuth authentication.");
 Log("Complete the login in the browser to continue.");
-RunCommand("dotnet", "fsi src/Tools/Daxif/GenerateTypeScriptContext.fsx");
+RunCommand("npm", "run typings", Path.Combine("src", "Dataverse", "WebResources"));
 
 Step(6, "Initializing git repository and creating initial commit");
 RunCommand("git", "init");

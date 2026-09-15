@@ -4,9 +4,22 @@
   "tools": {
     "nswag.consolecore": {
       "version": "14.0.7",
-      "commands": [
-        "nswag"
-      ]
+      "commands": ["nswag"]
+    },
+    "xrmsync": {
+      "version": "1.0.0-preview.25",
+      "commands": ["xrmsync"],
+      "rollForward": true
+    },
+    "xrmdefinitelytyped": {
+      "version": "7.0.0-preview.7",
+      "commands": ["xdt"],
+      "rollForward": true
+    },
+    "dvspec": {
+      "version": "1.0.1",
+      "commands": ["dvspec"],
+      "rollForward": true
     }
   }
 }

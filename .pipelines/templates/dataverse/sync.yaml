@@ -1,10 +1,29 @@
 # Sync components
 
-  steps:
-    - script: '"$(FsiPath)" "$(DaxifPath)/PluginSyncDev.fsx" $(AuthParams)'
-      displayName: 'PluginSyncDev'
+parameters:
+  - name: dataverseServiceConnection
+    type: string
+    default: DEV
 
-    - script: '"$(FsiPath)" "$(DaxifPath)/WebresourceSyncDev.fsx" $(AuthParams)'
-      displayName: 'WebResourceSyncDev'
+steps:
+  - script: '"$(FsiPath)" "$(DaxifPath)/PluginSyncDev.fsx" $(AuthParams)'
+    displayName: 'PluginSyncDev'
 
+  - script: 'npm ci && npm run build'
+    workingDirectory: '$(Build.SourcesDirectory)/src/Dataverse/WebResources'
+    displayName: 'Build web resources'
 
+  - task: AzureCLI@2
+    displayName: 'Sync web resources'
+    inputs:
+      azureSubscription: ${{ parameters.dataverseServiceConnection }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        az account show --output none
+        dotnet tool restore
+        dotnet xrmsync --profile webresources
+      workingDirectory: '$(Build.SourcesDirectory)'
+    env:
+      DATAVERSE_URL: $(DataverseUrl)
+      DATAVERSE_CREDENTIAL_TYPE: azcli

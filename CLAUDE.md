@@ -49,7 +49,7 @@ This is a mono repository with multiple connected systems. All these systems use
     - [*Api](src/Azure/*Api): Minimal Api Web App that uses services from DataverseService.
   - [Dataverse](src/Dataverse): Contains the code running in Dataverse.
     - [SharedPluginLogic](src/Dataverse/SharedPluginLogic): A shared code project. Provides plugin code for the synchronous business logic.
-    - [WebResources](src/Dataverse/WebResources): Provides frontend code for Dataverse.
+    - [WebResources](src/Dataverse/WebResources): Provides self-contained HTML web resources and typed form scripts for Dataverse. HTML resources use XrmQuery; form scripts use XrmDefinitelyTyped form declarations.
     - [Plugins](src/Dataverse/Plugins): Read only! A .NET 4.6.2 class library. The output of this project will be deployed to Dataverse. Uses the output of SharedPluginLogic.
     - [PluginsNetCore](src/Dataverse/PluginsNetCore): Read only! A modern .NET class library. The output of this project will be used in tests. Uses the output of SharedPluginLogic. No files should be added to this project directly.
   - [Shared](src/Shared): Contains code that is shared between Azure and Dataverse business logic.
@@ -61,3 +61,12 @@ This is a mono repository with multiple connected systems. All these systems use
   - [IntegrationTests](test/IntegrationTests): Contains tests that run Azure and Dataverse business logic together locally.
   - [SharedTest](test/SharedTest): Contains the files shared between test projects.
 - [Infrastructure](Infrastructure): Azure Bicep scripts (IaC).
+
+## Dataverse metadata
+
+The template does not keep a metadata spec by default. For a metadata task, use the pinned
+`dvspec` tool to inspect the environment, then create a temporary root `spec.yaml` containing only
+the intended change. Specs are git-ignored so make.powerapps.com remains supported and the repository
+is not the metadata source of truth. Teams that deliberately adopt a desired-state workflow may
+force-add their spec. Connection settings for `dvspec`, XrmSync, and XrmDefinitelyTyped live in the
+root `appsettings.json`. Validate a spec before planning or applying it.

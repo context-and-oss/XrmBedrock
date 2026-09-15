@@ -11,7 +11,7 @@
   <Folder Name="/src/Dataverse/">
     <Project Path="src/Dataverse/ConsoleJobs/ConsoleJobs.csproj" />
     <Project Path="src/Dataverse/Plugins/Plugins.csproj" />
-    <Project Path="src/Dataverse/WebResources/WebResources.csproj" />
+    <Project Path="src/Dataverse/WebResources/WebResources.esproj" />
   </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/SharedContext/SharedContext.csproj" />
