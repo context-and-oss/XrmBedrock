@@ -1,0 +1,23 @@
+parameters:
+  - name: azureServiceConnection
+    type: string
+    default: Dev
+steps:
+  - task: AzureCLI@2
+    displayName: Restore tools and generate Dataverse contexts and test metadata
+    inputs:
+      azureSubscription: ${{ parameters.azureServiceConnection }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      workingDirectory: $(Build.SourcesDirectory)
+      inlineScript: |
+        $ErrorActionPreference = 'Stop'
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed' }
+        foreach ($tool in @('xrmcontext', 'xdt', 'xrmmockup-metadata')) {
+          dotnet tool run $tool
+          if ($LASTEXITCODE -ne 0) { throw "$tool failed" }
+        }
+    env:
+      DataverseUrl: $(DataverseUrl)
+      DataverseCredentialType: azcli

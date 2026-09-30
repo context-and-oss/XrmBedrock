@@ -1,0 +1,30 @@
+# Temporary authentication gap: legacy DAXIF uses the existing variable-group secret.
+# Azure service connections used by the modern tools may remain federated.
+parameters:
+  - name: workingDirectory
+    type: string
+    default: $(Build.SourcesDirectory)
+  - name: scriptName
+    type: string
+  - name: arguments
+    type: string
+    default: ''
+  - name: displayName
+    type: string
+steps:
+  - task: PowerShell@2
+    displayName: ${{ parameters.displayName }}
+    inputs:
+      targetType: inline
+      workingDirectory: ${{ parameters.workingDirectory }}
+      script: |
+        $ErrorActionPreference = 'Stop'
+        if ([string]::IsNullOrWhiteSpace($env:DAXIF_CLIENT_ID) -or [string]::IsNullOrWhiteSpace($env:DAXIF_CLIENT_SECRET) -or $env:DAXIF_CLIENT_ID -eq ('$' + '(DataverseAppId)') -or $env:DAXIF_CLIENT_SECRET -eq ('$' + '(DataverseSecret)')) {
+          throw 'Legacy DAXIF requires DataverseAppId and secret DataverseSecret in the environment variable group until extended-solution authentication is replaced.'
+        }
+        & "$(FsiPath)" "src/Tools/Daxif/${{ parameters.scriptName }}" ${{ parameters.arguments }}
+        if ($LASTEXITCODE -ne 0) { throw 'DAXIF command failed' }
+    env:
+      DataverseUrl: $(DataverseUrl)
+      DAXIF_CLIENT_ID: $(DataverseAppId)
+      DAXIF_CLIENT_SECRET: $(DataverseSecret)

@@ -1,49 +1,32 @@
-import { argv } from "node:process";
 import * as esbuild from "esbuild";
-import * as glob from "glob";
-import { relative, dirname } from "path";
-import { mkdirSync, writeFileSync } from "fs";
-import fs from 'fs';
-import path from 'path';
+import { globSync } from "glob";
+import { mkdirSync, rmSync } from "node:fs";
 
-const watchMode = (argv.length > 2 && "watch" === argv[2]);
+const watchMode = process.argv.includes("watch");
+const entryPoints = globSync("src/templatepublisherprefix_templateprojectname/**/*.ts");
 
-// WebResource Project Directory Path
-const projectDir = "./src/templatepublisherprefix_templateprojectname";
+// Never leave removed sources deployable through an old bundle.
+rmSync("dist", { recursive: true, force: true });
+mkdirSync("dist/templatepublisherprefix_templateprojectname", { recursive: true });
 
-// Collect all JS files in the modules directory
-const entryPoints = glob.sync(`${projectDir}/out/**/*.js`).sort();
+// A new project intentionally has no application webresources.
+if (entryPoints.length === 0) {
+    console.info("No webresources to bundle yet.");
+    process.exit(0);
+}
 
-// Generate _index.js that imports all modules and XrmQuery
-const indexPath = `${projectDir}/out/_index.js`;
-
-mkdirSync(path.dirname(indexPath), { recursive: true });
-
-let importLines = entryPoints
-    .map(f => `import "./${relative(dirname(indexPath), f).replace(/\\/g, "/")}";`)
-    .join("\n");
-
-writeFileSync(indexPath, importLines);
-
-// Build options for ESBuild
-// This will bundle into a single WebResourceBundle.js file
-const buildOptions = {
-    entryPoints: [indexPath],
+const options = {
+    entryPoints,
     bundle: true,
-    outfile: `${projectDir}/WebResourceBundle.js`,
+    outbase: "src",
+    outdir: "dist",
+    format: "iife",
     sourcemap: true,
-    format: "cjs",
-    logLevel: "info",
-    banner: {
-        js: "var module = module || {};\n"
-    }
+    logLevel: "info"
 };
-
 if (watchMode) {
-    console.info("Starting ESBuild in watch mode");
-    const ctx = await esbuild.context(buildOptions);
-    await ctx.watch();
+    const context = await esbuild.context(options);
+    await context.watch();
 } else {
-    console.info("Starting ESBuild for a single run");
-    await esbuild.build(buildOptions);
+    await esbuild.build(options);
 }

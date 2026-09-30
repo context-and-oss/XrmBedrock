@@ -101,7 +101,6 @@ stages:
     parameters:
       environment: Test
       dataverseEnv: Test
-      powerPlatformSPN: "Dataverse Test"
       dependsOn: Deploy_Development
       params: ${{parameters}}
 
@@ -109,7 +108,6 @@ stages:
     parameters:
       environment: UAT
       dataverseEnv: UAT
-      powerPlatformSPN: "Dataverse UAT"
       dependsOn: Deploy_Test
       params: ${{parameters}}
 
@@ -117,6 +115,5 @@ stages:
     parameters:
       environment: Prod
       dataverseEnv: Prod
-      powerPlatformSPN: "Dataverse Prod"
       dependsOn: Deploy_UAT
       params: ${{parameters}}

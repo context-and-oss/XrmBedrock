@@ -7,6 +7,34 @@
       "commands": [
         "nswag"
       ]
+    },
+    "xrmcontext": {
+      "version": "4.0.0-beta.26",
+      "commands": [
+        "xrmcontext"
+      ],
+      "rollForward": false
+    },
+    "xrmdefinitelytyped": {
+      "version": "7.0.0-preview.10",
+      "commands": [
+        "xdt"
+      ],
+      "rollForward": false
+    },
+    "xrmsync": {
+      "version": "1.0.0-preview.27",
+      "commands": [
+        "xrmsync"
+      ],
+      "rollForward": false
+    },
+    "xrmmockup.metadatagenerator": {
+      "version": "1.2.0",
+      "commands": [
+        "xrmmockup-metadata"
+      ],
+      "rollForward": false
     }
   }
 }

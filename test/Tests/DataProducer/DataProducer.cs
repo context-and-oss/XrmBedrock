@@ -11,7 +11,6 @@ namespace Tests;
 /// <param name="elevatedDao">Optional admin dao to allow creation of related entities</param>
 public partial class DataProducer(IDataverseAccessObject dao, IDataverseAccessObject? elevatedDao = null)
 {
-    private readonly IDataverseAccessObject dao = dao;
     private readonly IDataverseAccessObject elevatedDao = elevatedDao ?? dao;
 
     private readonly Random random = new Random((int)DateTime.Now.Ticks);

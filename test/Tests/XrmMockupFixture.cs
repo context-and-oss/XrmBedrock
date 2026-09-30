@@ -23,7 +23,7 @@ public class XrmMockupFixture
                 sharedSettings = new XrmMockupSettings
                 {
                     BasePluginTypes = new Type[] { typeof(Plugin) },
-                    BaseCustomApiTypes = new Tuple<string, Type>[] { new("templatepublisherprefix", typeof(CustomAPI)) },
+                    BaseCustomApiTypes = new Tuple<string, Type>[] { new("templatepublisherprefix", typeof(Plugin)) },
                     EnableProxyTypes = true,
                     IncludeAllWorkflows = false,
                     MetadataDirectoryPath = Path.Combine("..", "..", "..", "..", "Tests", "MetadataGenerated"),

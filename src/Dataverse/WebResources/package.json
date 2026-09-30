@@ -10,15 +10,18 @@
   "author": "DG",
   "scripts": {
     "concurrently": "concurrently",
-    "clean": "git clean -fXd -e \\!node_modules -e \\!node_modules/**/* ./src/templatepublisherprefix_templateprojectname/out",
-    "clean-all": "git clean -fXd -e \\!node_modules -e \\!node_modules/**/* ./src/templatepublisherprefix_templateprojectname ./src/templatepublisherprefix_templateprojectname/out",
-    "build": "tsc",
-    "postbuild": "node esbuild.config.mjs"
+    "clean": "node -e \"require('fs').rmSync('dist', {recursive:true, force:true})\"",
+    "clean-all": "node -e \"require('fs').rmSync('dist', {recursive:true, force:true})\"",
+    "build": "tsc --noEmit && node esbuild.config.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
     "esbuild": "^0.25.5",
     "glob": "^11.0.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "@types/xrm": "^9.0.0"
+  },
+  "dependencies": {
+    "@delegateas/xrmquery": "7.0.0-preview.1"
   }
 }
