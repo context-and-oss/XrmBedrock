@@ -3,17 +3,11 @@ using System.Runtime.Caching;
 
 namespace SharedContext.Dao;
 
-internal class CacheHandler
+internal class CacheHandler(MemoryCache cache, ILogger logger)
 {
     public const int _cacheExpirationTimeInMinutes = 60;
-    private readonly MemoryCache _cache;
-    private readonly ILogger logger;
-
-    public CacheHandler(MemoryCache cache, ILogger logger)
-    {
-        _cache = cache;
-        this.logger = logger;
-    }
+    private readonly MemoryCache _cache = cache;
+    private readonly ILogger logger = logger;
 
     public T GetOrCreate<T>(string key, Func<T> factory)
     {

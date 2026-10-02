@@ -57,7 +57,7 @@ internal class DataverseWrapAccess
 
     public static string GetAttributesFormatted(Entity entity)
     {
-        List<string> attributes = new List<string>();
+        List<string> attributes = [];
         foreach (KeyValuePair<string, object> attribute in entity.Attributes)
             // Until we know where logs are put and which restrictions apply to logged data we will NOT log attribute values
             //    attributes.Add(attribute.Key + ": " + attribute.Value);

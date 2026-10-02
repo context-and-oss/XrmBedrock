@@ -11,12 +11,10 @@ namespace Tests;
 /// </summary>
 public class MessageExecutor
 {
-    private readonly List<AwaitingMessage> messages;
+    private readonly List<AwaitingMessage> messages = [];
 
     public MessageExecutor(IDataverseAccessObjectAsync adminDao)
     {
-        messages = new List<AwaitingMessage>();
-
         // TODO: Add your Azure Function references here and use adminDao to create the dataverse services
         _ = adminDao;
     }

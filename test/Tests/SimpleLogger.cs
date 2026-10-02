@@ -39,7 +39,7 @@ public class SimpleLogger : ILogger
 public class SimpleLogger<T> : ILogger<T>
 #pragma warning restore SA1402 // File may only contain a single type
 {
-    private readonly SimpleLogger logger = new SimpleLogger();
+    private readonly SimpleLogger logger = new();
 
 #pragma warning disable CS8633 // Nullability in constraints for type parameter doesn't match the constraints for type parameter in implicitly implemented interface method'.
 #pragma warning disable CS8766 // Nullability of reference types in return type doesn't match implicitly implemented member (possibly because of nullability attributes).

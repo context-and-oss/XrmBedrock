@@ -159,7 +159,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
         var guidArray = guids.ToArray();
         if (guidArray.Length == 0)
         {
-            return new List<T>();
+            return [];
         }
 
         var entityLogicalName = DataverseStaticExtensions.LogicalName<T>();
@@ -191,7 +191,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
         var valueArray = values.ToArray();
         if (valueArray.Length == 0)
         {
-            return new List<T>();
+            return [];
         }
 
         var entityLogicalName = DataverseStaticExtensions.LogicalName<T>();

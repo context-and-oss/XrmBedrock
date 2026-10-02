@@ -7,14 +7,9 @@ using OneOf.Types;
 
 namespace DataverseService.UtilityArea;
 
-public class DataverseImageService
+public class DataverseImageService(IDataverseAccessObjectAsync adminDao)
 {
-    private readonly IDataverseAccessObjectAsync adminDao;
-
-    public DataverseImageService(IDataverseAccessObjectAsync adminDao)
-    {
-        this.adminDao = adminDao;
-    }
+    private readonly IDataverseAccessObjectAsync adminDao = adminDao;
 
     public OneOf<string, NotFound> SetImageAttributeAsBase64(Guid entityId, string entityName, string attributeName)
     {
