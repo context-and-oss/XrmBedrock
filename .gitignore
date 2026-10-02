@@ -361,12 +361,6 @@ MigrationBackup/
 # ----- Above is GitHub VisualStudio.gitignore, below are custom rules -----
 # --------------------------------------------------------------------------
 
-# DAXIF
-!/**/Daxif/bin/
-/**/Daxif/*.dll
-
-*.daxif
-/src/Tools/Daxif/username.txt
 /src/Dataverse/WebResources/typings/XRM/*
 /src/Dataverse/WebResources/src/**/*.js
 /src/Dataverse/WebResources/src/**/*.map
@@ -387,4 +381,16 @@ MigrationBackup/
 
 # Mac
 .DS_Store
-/src/Tools/Daxif/username.txt
+
+
+# Generated tool/build output
+artifacts/
+PostSetup.log
+appsettings.local.json
+/src/Dataverse/WebResources/dist/
+
+# Restored runtime and exported extended solutions
+/src/Tools/Daxif/bin/
+/src/Tools/Daxif/solutions/
+
+/src/Tools/Daxif/runtime/

@@ -1,24 +1,37 @@
-# Import solution
 parameters:
   environment:
-  powerPlatformSPN:
 steps:
-- script: '"$(FsiPath)" "$(Pipeline.Workspace)/Scripts/SolutionImportArg.fsx" $(AuthParams) /env:${{parameters.environment}} /dir:$(Pipeline.Workspace)/Scripts/solutions'
-  displayName: 'Solution Import ${{parameters.environment}}'
-
-- task: PowerPlatformToolInstaller@2
-  inputs:
-    DefaultVersion: true
-
-- task: PowerPlatformPublishCustomizations@2
-  inputs:
-    authenticationType: 'PowerPlatformSPN'
-    PowerPlatformSPN: ${{parameters.powerPlatformSPN}}
-    AsyncOperation: true
-    MaxAsyncWaitTime: '60'
-
-- script: '"$(FsiPath)" "$(Pipeline.Workspace)/Scripts/SolutionPostImportArg.fsx" $(AuthParams) /env:${{parameters.environment}} /dir:$(Pipeline.Workspace)/Scripts/solutions'
-  displayName: 'Solution Post Import ${{parameters.environment}}'
-
-- script: '"$(FsiPath)" "$(DaxifPath)/EnsureManagedIdentity.fsx" $(AuthParams) /env:${{parameters.environment}} /clientid:"$(AzureClientId)" /tenantid:"$(AzureTenantId)"'
-  displayName: 'Ensure Managed Identity'
+  - task: UseDotNet@2
+    inputs:
+      version: 10.x
+  - template: run-daxif.yaml
+    parameters:
+      workingDirectory: $(Pipeline.Workspace)/Dataverse
+      scriptName: SolutionImportArg.fsx
+      arguments: '"/env:${{ parameters.environment }}" "/dir:$(Pipeline.Workspace)/Dataverse/solutions"'
+      displayName: Import DAXIF extended solution
+  - template: publish-all.yaml
+    parameters:
+      workingDirectory: $(Pipeline.Workspace)/Dataverse
+      environment: ${{ parameters.environment }}
+  - template: run-daxif.yaml
+    parameters:
+      workingDirectory: $(Pipeline.Workspace)/Dataverse
+      scriptName: SolutionPostImportArg.fsx
+      arguments: '"/env:${{ parameters.environment }}" "/dir:$(Pipeline.Workspace)/Dataverse/solutions"'
+      displayName: Apply DAXIF extended solution post-import state
+  - task: AzureCLI@2
+    displayName: Link target environment plugin managed identity
+    inputs:
+      azureSubscription: ${{ upper(parameters.environment) }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      workingDirectory: '$(Pipeline.Workspace)/Dataverse'
+      inlineScript: |
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed' }
+        dotnet tool run xrmsync identity --operation Ensure --assembly "$(PluginAssembly)" --client-id "$(AzureClientId)" --tenant-id "$(AzureTenantId)" --ci
+        if ($LASTEXITCODE -ne 0) { throw 'Managed identity linking failed' }
+    env:
+      DataverseUrl: $(DataverseUrl)
+      DataverseCredentialType: azcli

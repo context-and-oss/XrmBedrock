@@ -1,15 +1,34 @@
 {
   "$schema": "http://json.schemastore.org/dotnetcli.host",
   "symbolInfo": {
-    "companyName": { "longName": "company-name", "shortName": "cn" },
-    "publisherPrefix": { "longName": "publisher-prefix", "shortName": "pp" },
-    "certPassword": { "longName": "cert-password" },
-    "solutionId": { "longName": "solution-id", "shortName": "si" },
-    "devUrl": { "longName": "dev-url" },
-    "testUrl": { "longName": "test-url" },
-    "uatUrl": { "longName": "uat-url" },
-    "prodUrl": { "longName": "prod-url" },
-    "resourceGroupName": { "longName": "rg-name" },
-    "dataverseUsername": { "longName": "username" }
+    "companyName": {
+      "longName": "company-name",
+      "shortName": "cn"
+    },
+    "publisherPrefix": {
+      "longName": "publisher-prefix",
+      "shortName": "pp"
+    },
+    "certPassword": {
+      "longName": "cert-password"
+    },
+    "devUrl": {
+      "longName": "dev-url"
+    },
+    "testUrl": {
+      "longName": "test-url"
+    },
+    "uatUrl": {
+      "longName": "uat-url"
+    },
+    "prodUrl": {
+      "longName": "prod-url"
+    },
+    "resourceGroupName": {
+      "longName": "rg-name"
+    },
+    "solution": {
+      "longName": "solution"
+    }
   }
 }

@@ -3,9 +3,13 @@
   "compilerOptions": {
     "module": "ES6",
     "moduleResolution": "Bundler",
-    "outDir": "./src/templatepublisherprefix_templateprojectname/out"
+    "noEmit": true,
+    "types": [
+      "xrm"
+    ]
   },
   "include": [
-    "**/*.ts"
+    "src/**/*.ts",
+    "typings/**/*.ts"
   ]
 }

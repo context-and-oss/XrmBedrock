@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<AssemblyName>templatecompanyname.templateprojectname.Dataverse.Plugins</AssemblyName>
+		<TargetFramework></TargetFramework>
 		<TargetFrameworks>net462;net10.0</TargetFrameworks>
 		<SignAssembly>False</SignAssembly>
 		<AssemblyOriginatorKeyFile>..\..\..\templatecompanyname.snk</AssemblyOriginatorKeyFile>
@@ -8,11 +9,12 @@
 	</PropertyGroup>
 	
 	<ItemGroup>
-		<!-- ILRepack is only need because DAXIF doesn't support Plugin Packages yet -->
-		<PackageReference Include="ILRepack" Version="2.0.34" GeneratePathProperty="true">
+		<!-- Merge dependencies for single-assembly plugin deployment through XrmSync. -->
+		<PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.48">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="XrmPluginCore" Version="1.4.1" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
@@ -44,24 +46,8 @@
 	  </None>
 	</ItemGroup>
 	
-	<!-- ILRepack is only need because DAXIF doesn't support Plugin Packages yet -->
-	<Target Name="ILRepack" AfterTargets="Build" Condition="'$(TargetFramework)' == 'net462'">
-		<ItemGroup>
-			<InputAssemblies Include="$(TargetPath)" />
-			<InputAssemblies Include="$(TargetDir)Microsoft.Bcl.AsyncInterfaces.dll" />
-			<InputAssemblies Include="$(TargetDir)Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
-			<InputAssemblies Include="$(TargetDir)Microsoft.Extensions.DependencyInjection.dll" />
-			<InputAssemblies Include="$(TargetDir)Microsoft.Extensions.Logging.Abstractions.dll" />
-			<InputAssemblies Include="$(TargetDir)Newtonsoft.Json.dll" />
-			<InputAssemblies Include="$(TargetDir)SharedContext.dll" />
-			<InputAssemblies Include="$(TargetDir)SharedDataverseLogic.dll" />
-			<InputAssemblies Include="$(TargetDir)SharedDomain.dll" />
-			<InputAssemblies Include="$(TargetDir)System.Threading.Tasks.Extensions.dll" />
-			<InputAssemblies Include="$(TargetDir)System.Text.Json.dll" />
-		</ItemGroup>
-		<Exec Command="$(PkgILRepack)\tools\ILRepack.exe /parallel /keyfile:..\..\..\templatecompanyname.snk /lib:$(TargetDir) /out:$(TargetDir)Merged.$(TargetFileName) @(InputAssemblies -> '%(Identity)', ' ')" />
-  </Target>
-	<Target Name="SignDLL" AfterTargets="ILRepack" Condition="'$(TargetFramework)' == 'net462'">
+
+	<Target Name="SignDLL" AfterTargets="MergePluginAssembly" Condition="'$(TargetFramework)' == 'net462' and '$(PackAndSignPlugin)' == 'true' and '$(OS)' == 'Windows_NT'">
 	  <Exec Command="signtool sign /p templatecertpassword /f ..\..\..\plugincert.pfx /tr http://timestamp.digicert.com /fd SHA256 /td SHA256 &quot;$(TargetDir)Merged.$(TargetFileName)&quot;" />
 	</Target>
 	<ItemGroup>

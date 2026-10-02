@@ -1,26 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<TargetFramework>net462</TargetFramework>
-	</PropertyGroup>
-	<ItemGroup>
-	  <None Remove="Daxif\CountEntities.fsx" />
-	  <None Remove="Daxif\DataExportSource.fsx" />
-	  <None Remove="Daxif\DataImportTarget.fsx" />
-	  <None Remove="Daxif\Playground.fsx" />
-	  <None Remove="Daxif\username.txt" />
-	  <None Remove="Daxif\ViewExtender.fsx" />
-	  <None Remove="Daxif\WorkflowSyncDev.fsx" />
-	</ItemGroup>
-	<ItemGroup>
-	  <PackageReference Include="Delegate.Daxif" Version="5.6.0" />
-	  <PackageReference Include="Delegate.Daxif.Scripts" Version="1.0.0" />
-	  <PackageReference Include="Delegate.XrmContext" Version="3.0.1" />
-	  <PackageReference Include="Delegate.XrmDefinitelyTyped" Version="6.6.0" />
-	  <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
-	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-	  <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-	</ItemGroup>
-	<ItemGroup>
-	  <EditorConfigFiles Remove=".\.editorconfig" />
-	</ItemGroup>
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Only the extended-solution workflow still needs DAXIF. -->
+    <PackageReference Include="Delegate.Daxif" Version="5.6.0" GeneratePathProperty="true" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <Target Name="StageDaxifRuntime" AfterTargets="Build">
+    <ItemGroup>
+      <!-- This legacy package ships dependencies as content, not NuGet dependencies. -->
+      <DaxifRuntime Include="$(PkgDelegate_Daxif)/content/Daxif/bin/*.dll" />
+      <DaxifRuntime Include="$(PkgDelegate_Daxif)/lib/net462/Delegate.Daxif.dll" />
+    </ItemGroup>
+    <!-- Remove stale dependencies when the restored package changes. -->
+    <RemoveDir Directories="$(MSBuildProjectDirectory)/Daxif/runtime" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)/Daxif/runtime" />
+    <Copy SourceFiles="@(DaxifRuntime)" DestinationFolder="$(MSBuildProjectDirectory)/Daxif/runtime" SkipUnchangedFiles="true" />
+    <!-- Override the package's old JSON dependency with the pinned patched version. -->
+    <Copy SourceFiles="$(TargetDir)Newtonsoft.Json.dll" DestinationFolder="$(MSBuildProjectDirectory)/Daxif/runtime" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

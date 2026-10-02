@@ -1,5 +1,6 @@
 using DataverseLogic.Utility;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Xrm.Sdk;
+using XrmPluginCore.Enums;
 
 namespace DataverseRegistration.Utility;
 
@@ -12,10 +13,10 @@ public class AutopublishDuplicateRulesOnPublishAll : Plugin
 {
     public AutopublishDuplicateRulesOnPublishAll()
     {
-        RegisterPluginStep<AnyEntity>(
+        RegisterStep<Entity, DuplicateRuleService>(
             EventOperation.PublishAll,
             ExecutionStage.PostOperation,
-            provider => provider.GetRequiredService<DuplicateRuleService>().AutopublishRules())
+            service => service.AutopublishRules())
             .SetExecutionMode(ExecutionMode.Asynchronous);
     }
 }

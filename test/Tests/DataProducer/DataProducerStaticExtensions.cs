@@ -5,7 +5,7 @@ namespace Tests;
 
 internal static class DataProducerStaticExtensions
 {
-    internal static void EnsureValue<TE>(this TE entity, Expression<Func<TE, string>> selector, string defaultvalue)
+    internal static void EnsureValue<TE>(this TE entity, Expression<Func<TE, string?>> selector, string defaultvalue)
         where TE : Entity
     {
         if (selector.Compile()(entity) == null)

@@ -1,25 +1,11 @@
-(**
-SolutionExportDev
-*)
-
-#load @"_Config.fsx"
+#load "_Config.fsx"
 open _Config
-
-open System
 open System.IO
 open DG.Daxif
-open DG.Daxif.Common.Utility
 
-// Get version increment from CLI if provided, default to Revision
-let versionIncrement = 
-  if fsi.CommandLineArgs.Length > 1 then getVersionIncrement fsi.CommandLineArgs.[1]
-  else VersionIncrement.Revision
-
-// Ensure solution directory exists
-Directory.CreateDirectory(Path.Daxif.crmSolutionsFolder)
-
-// Update solution version
-Solution.UpdateVersionNumber(Env.dev, SolutionInfo.name, versionIncrement)
-
-// Export unmanaged
-Solution.Export(Env.dev, SolutionInfo.name, Path.Daxif.crmSolutionsFolder, managed = false, extended = true)
+// Keep the original revision increment and export the extended payload with the zip.
+let env = selectedEnvironment ()
+let folder = solutionFolder ()
+Directory.CreateDirectory(folder) |> ignore
+Solution.UpdateVersionNumber(env, SolutionInfo.name, VersionIncrement.Revision)
+Solution.Export(env, SolutionInfo.name, folder, managed = managed (), extended = true)

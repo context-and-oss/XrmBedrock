@@ -538,6 +538,8 @@ dotnet_diagnostic.CA1852.severity = none
 dotnet_diagnostic.CA2201.severity = none
 dotnet_diagnostic.CS8600.severity = none
 dotnet_diagnostic.CS8603.severity = none
+dotnet_diagnostic.CS8602.severity = none
+dotnet_diagnostic.CS8625.severity = none
 dotnet_diagnostic.CS8669.severity = none
 dotnet_diagnostic.IDE0005.severity = none
 dotnet_diagnostic.IDE1005.severity = none
@@ -605,9 +607,6 @@ dotnet_diagnostic.IDE1006.severity = none
 dotnet_diagnostic.MA0048.severity = none
 dotnet_diagnostic.SA1649.severity = none
 
-[src/Tools/**]
-dotnet_diagnostic.IDE0005.severity = none
-
 [src/Dataverse/**/Plugin.cs]
 generated_code = true
 dotnet_diagnostic.MA0048.severity = none
@@ -660,3 +659,9 @@ dotnet_diagnostic.CA1812.severity = none	# Same reason - generated Program class
 
 [test/Tests/DataProducer/**]
 dotnet_diagnostic.MA0048.severity = none 	# Filenames cannot match when using partial classes
+# Deployed XrmContext emits nullable warnings in generated managed-property getters.
+[**/SharedContext/Generated/**/*.cs]
+generated_code = false
+dotnet_diagnostic.CS8603.severity = none
+dotnet_diagnostic.CS8602.severity = none
+dotnet_diagnostic.CS8625.severity = none

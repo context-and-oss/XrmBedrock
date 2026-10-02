@@ -11,11 +11,10 @@ namespace Tests;
 /// <param name="elevatedDao">Optional admin dao to allow creation of related entities</param>
 public partial class DataProducer(IDataverseAccessObject dao, IDataverseAccessObject? elevatedDao = null)
 {
-    private readonly IDataverseAccessObject dao = dao;
     private readonly IDataverseAccessObject elevatedDao = elevatedDao ?? dao;
 
-    private readonly Random random = new Random((int)DateTime.Now.Ticks);
-    private readonly Dictionary<int, bool> used = new Dictionary<int, bool>();
+    private readonly Random random = new((int)DateTime.Now.Ticks);
+    private readonly Dictionary<int, bool> used = [];
 
     internal int GetUniqueNumber()
     {

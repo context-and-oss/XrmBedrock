@@ -6,14 +6,9 @@ using Task = System.Threading.Tasks.Task;
 
 namespace DataverseService.UtilityArea;
 
-public class DataverseNotificationService
+public class DataverseNotificationService(IOrganizationServiceAsync2 client)
 {
-    private readonly IOrganizationServiceAsync2 client;
-
-    public DataverseNotificationService(IOrganizationServiceAsync2 client)
-    {
-        this.client = client;
-    }
+    private readonly IOrganizationServiceAsync2 client = client;
 
     public Task NotifyOwner(EntityReference recordRef, string title, string message)
     {
@@ -30,8 +25,8 @@ public class DataverseNotificationService
                 ["Title"] = title,
                 ["Recipient"] = owner,
                 ["Body"] = message,
-                ["IconType"] = new OptionSetValue((int)appnotification_IconType.Failure),
-                ["ToastType"] = new OptionSetValue((int)appnotification_ToastType.Timed),
+                ["IconType"] = new OptionSetValue((int)notification_iconid.Failure),
+                ["ToastType"] = new OptionSetValue((int)notification_toasttype.Timed),
             },
         };
 

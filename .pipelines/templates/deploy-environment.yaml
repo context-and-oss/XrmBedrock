@@ -1,7 +1,6 @@
 parameters:
   environment:
   dataverseEnv:
-  powerPlatformSPN:
   dependsOn:
   params:
 
@@ -40,9 +39,8 @@ stages:
     condition: eq(${{parameters.params.deployDataverse}}, true)
     steps:
       - download: current
-        artifact: Scripts
+        artifact: Dataverse
         displayName: Download artifacts
       - template: dataverse/import-solution.yaml
         parameters:
           environment: ${{parameters.dataverseEnv}}
-          powerPlatformSPN: ${{parameters.powerPlatformSPN}}

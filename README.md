@@ -1,88 +1,102 @@
 # XrmBedrock
-This project serves as a template for Dataverse projects. This project aims to make it easy to work with Dataverse and Azure together. This project shows that modern development paradigms are applicable to Dataverse.
 
-This template will be updated. The current list is as follows
-* Source control deployment
-* New way of handling web resources.
-* Deploying data.
+A dotnet-new template for Dataverse plugins, Custom APIs, TypeScript webresources,
+XrmMockup tests and optional Azure services. Requires .NET 10 SDK and Node.js 22+.
 
----
-## Prerequisites
-Signtool is only needed when you pack and sign the plugin assembly for deployment (i.e. when building with `-p:PackAndSignPlugin=true`, see [Building the plugin](#building-the-plugin)). A regular build does **not** require it. It is included in the Windows SDK, which can be downloaded here: https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk/. 
-
-If Signtool already installed, proceceed too next section. 
-if not; Add signtool to system variables:
-1. Press Win + R, type sysdm.cpl, hit Enter.
-2. Go to Advanced → Environment Variables.
-3. Under System variables, find Path, click Edit.
-4. Click New, paste the folder path (the one containing signtool.exe).
-Example:
-  C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool
-6. Click OK on all dialogs.
-7. Verify the new command på open cmd and run "signtool /?" If not found restart computer and try again
-
-Additionally install [PowerShell Core](https://github.com/PowerShell/PowerShell) (`pwsh`)
-
-## Building the plugin
-By default, builds do **not** pack (ILRepack) or sign the plugin assembly, so a routine build needs no extra tooling:
-
-```
-dotnet build --configuration Release
-```
-
-To produce the deployable, merged and signed DLL, opt in with the `PackAndSignPlugin` property. This requires `signtool` on your PATH (see [Prerequisites](#prerequisites)); ILRepack is restored automatically as a NuGet package:
-
-```
-dotnet build src/Dataverse/Plugins/Plugins.csproj -c Release -p:PackAndSignPlugin=true
-```
-
-**Caveat:** the Daxif deploy scripts expect `Merged.templatecompanyname.templateprojectname.Dataverse.Plugins.dll`, which is produced **only** when `-p:PackAndSignPlugin=true` is passed. A plain build does not produce it, so build with the flag before deploying the plugin locally. The pipeline already passes this flag, so CI output is unchanged.
-
-# Quick start (dotnet new)
-
-1. Install the template from the repository root:
-
-   ```bash
-   dotnet new install .
-   ```
-
-2. Create a new project, replacing each placeholder value with your own:
-
-   ```bash
-   dotnet new xrmbedrock -n MyProject \
-     --company-name MyOrg \
-     --publisher-prefix abc \
-     --solution mysol \
-     --dev-url https://myorg-dev.crm4.dynamics.com \
-     --test-url https://myorg-test.crm4.dynamics.com \
-     --uat-url https://myorg-uat.crm4.dynamics.com \
-     --prod-url https://myorg-prod.crm4.dynamics.com \
-     --rg-name myorg-mysol \
-     --cert-password MySecurePassword123 \
-     --username user@myorg.onmicrosoft.com
-   ```
-
-   > The `\` line continuations are bash syntax; in PowerShell use a backtick (`` ` ``) instead.
-
-3. Post-setup runs automatically (generates a strong name key, plugin signing certificate, restores tools, installs npm packages, and generates Dataverse context files). 
-   You will be prompted to authenticate with your Dataverse environment via a browser popup. Requires [PowerShell Core](https://github.com/PowerShell/PowerShell) (`pwsh`).
-
-4. Once post-setup completes, initialize git and create the initial commit:
-
-   ```bash
-   git init && git add -A && git commit -m "Initial project setup from XrmBedrock template"
-   ```
-
-To uninstall the template: `dotnet new uninstall .`
-
-# Regenerating Dataverse Context
-
-The Dataverse context files (C# proxies, TypeScript typings, and test metadata) are generated from your Dataverse environment during post-template setup using the F# scripts in `src/Tools/Daxif/`. You can regenerate them at any time:
+## Create a project
 
 ```bash
-dotnet fsi src/Tools/Daxif/GenerateCSharpContext.fsx
-dotnet fsi src/Tools/Daxif/GenerateTypeScriptContext.fsx
+dotnet new install XrmBedrock
+dotnet new xrmbedrock -n MyProject --company-name Acme --solution MySolution --publisher-prefix ctx --dev-url https://yourorg.crm4.dynamics.com
 ```
+
+Post-setup generates signing keys, restores local dotnet tools, installs npm dependencies,
+generates contexts/test metadata and builds the solution. It stops on failure and prints
+all tool output, including device-code prompts, to the console and `PostSetup.log`.
+It preserves existing signing keys when rerun and never creates a git commit automatically.
+For manual setup use `dotnet run --project Setup/PostSetup`; add `-- --skip-generation`
+only when contexts and test metadata have already been generated.
+
+## Dataverse tools
+
+All tools are pinned in `.config/dotnet-tools.json`. Run them **from the solution root**:
+
+```bash
+dotnet tool restore
+dotnet tool run xrmcontext
+dotnet tool run xdt
+dotnet tool run xrmmockup-metadata
+dotnet build --configuration Release
+dotnet test --configuration Release
+dotnet tool run xrmsync --dry-run --prefix ctx
+dotnet tool run xrmsync --prefix ctx
+```
+
+`appsettings.json` is the shared DataverseConnection and generator/sync configuration.
+It selects the development URL, solution, output paths and extra entities. Set
+`DataverseCredentialType=devicecode` in the environment for headless setup, or `azcli`
+to use an authenticated Azure CLI session; `browser` is the default. Browser/device-code
+sign-ins are cached per normalized environment URL and reused across all tools.
+On headless Linux the cache may use unencrypted files; keep the user's cache private.
+Do not commit tokens or secrets. `DataverseUrl` overrides the URL without editing files.
+`DOTNET_ENVIRONMENT=test`, `uat` or `prod` selects an environment-specific settings file.
+
+XrmContext writes proxies to `src/Shared/SharedContext/Generated`, XDT writes declarations
+and runtime option-set objects to `src/Dataverse/WebResources/typings/XRM`, and XrmMockup
+writes metadata to `test/Tests/MetadataGenerated`. XDT uses npm `@types/xrm` and
+`@delegateas/xrmquery`; no bundled legacy XrmQuery scripts or executables are needed.
+
+Plugins and Custom APIs inherit from XrmPluginCore through the template's DI base class.
+The template includes infrastructure and reusable platform utilities only—no demo
+plugins, Custom APIs, form handlers or tests that need deleting before development.
+Add your own registrations, services, webresources and tests as needed. The PublishAll
+plugin is a platform utility for automatically publishing marked duplicate-detection rules.
+Dependencies are merged with a cross-platform ILRepack
+MSBuild task. Authenticode signing is optional (`-p:PackAndSignPlugin=true` on Windows),
+required if using certificate-based plugin managed identity. Webresources are bundled
+from TypeScript into `dist/<prefix>_<project>/` (empty projects build successfully); XrmSync uses that bundle folder and prepends `<publisher>_<solution>/` to each relative path.
+
+**XrmSync normally removes obsolete components.** Use `--additive` when deploying to a
+shared/existing solution, and always inspect a dry run first. `--prefix` must match the
+solution publisher prefix. Sync does not create the Dataverse solution/publisher: create
+those in your environment before running the generators or sync.
+
+## Remaining DAXIF extended-solution support
+
+`src/Tools` is retained **only** for DAXIF's extended-solution workflow, until a
+replacement tool supports it. Its minimal dependency-host project restores DAXIF
+and stages the runtime when built; no legacy binaries are checked in or packaged.
+See `src/Tools/README.md` for Windows/.NET Framework F# Interactive usage.
+
+Export uses `extended = true` and preserves the original revision increment.
+Deployment runs `ExtendedSolution.PreImport`, imports the solution, publishes
+customizations, then runs `ExtendedSolution.PostImport` against the same archive.
+The default is unmanaged, matching the original pipeline. The complete export
+folder, scripts and restored DAXIF runtime travel together in the Dataverse artifact.
+Generators, plugins, Custom APIs, webresources and managed identities continue to
+use the new dotnet tools. No other legacy DAXIF workflows have been restored.
+
+## Azure DevOps tool authentication
+
+Generation and sync run inside `AzureCLI@2` tasks with the Azure service connection
+(`Dev` by default) and `DataverseCredentialType=azcli`. Azure Resource Manager service
+connections can continue using **workload identity federation**. No Power Platform
+service connection is needed for publishing or solution build/deployment.
+
+**Temporary authentication gap:** retained DAXIF 5.6.0 cannot reuse the federated
+Azure CLI session. Extended solution processing and `Solution.PublishAll` therefore
+continue using `DataverseAppId` and secret `DataverseSecret` from each environment's
+Azure DevOps Library variable group, as before. The scripts pass these through
+DAXIF's existing client-secret arguments in memory; no secret is stored in source or
+placed on the process command line. This separate legacy secret is not a requirement
+for the Azure service connection. Both principals need their respective Dataverse
+application-user permissions. Remove the library-secret dependency when the
+extended-solution workflow can use the modern connection tools.
+
+Dataverse artifacts include the manifest, appsettings, merged plugin assembly,
+extended export folder and minimal DAXIF scripts/runtime. The optional
+`CopyUATToTest.yaml` environment-copy/data-transfer workflow still uses Power Platform
+connections; it is separate from solution build/deployment.
 
 # Azure Setup
 
@@ -124,62 +138,20 @@ Note: The pipeline template uses Dev, Test, UAT, Prod.
 The template assumes the following variables exist.
 * ResourceGroupName
 * DataverseUrl
-* DataverseAppId (used by pipeline)
-* DataverseSecret (used by pipeline)
+* DataverseAppId (temporary legacy DAXIF application ID)
+* DataverseSecret (secret variable; temporary legacy DAXIF credential)
 * AzureClientId
-* AzureClientSecret (only used for DAXIF)
 * AzureTenantId (Needed for the managed identity record)
 * AzureClientEAObjectId (Object id of the Enterprise Application related to the App registration)
 
 ## Service Connection
-Under Project Settings > Pipelines > Service connections, create 2 service connections per azure environment of types Power Platform and Azure Resource Manager.
-A service connection is used to authorize the pipeline against other services. The goal is to avoid secrets in the pipeline. Use the recommended settings with Workload Federated Credentials.
-Note: The pipeline template uses Dev, Test, UAT, Prod.
-
-###  How to create Power Platform service connections with federated credentials
-1.	Go to Project Settings > Pipelines > Service connections > New service connection > Power Platform
-2.	Select Workload Identity federation
-3.	Fill in the form 
-i Server URL = The URL of the Dataverse environment (https://dev.crm4.dynamics.com)
-ii Service Principal Id = The application (Client) id of the app registration
-iii TenantI Id = Teant Id, can be found in Azure Portal
-iV Service Connection Name = The name of the service connetion (e.g. Dataverse Dev)
-
-Once created:
-1.	Copy the Subject identifier as it is needed in the next step.
-
-You now need to create a federated credential on your app registration.
-1. Find your app registration in the Azure Portal
-2. Go to Manage > Certificates & secrets > Federated credentials > + Add credential
-i. For 'Federated credential scenario' select 'Other issuer'
-ii. Issuer = https://vstoken.dev.azure.com/{organizationName}
-iii. Type = Explicit subject identifier
-iV. Value = Paste the `workloadIdentityFederationSubject` from the earlier step
-V. Name = Name of your choice (e.g. PipelineDataverse)
-
-### How to create Azure Resource Manager service connections with federated credentials
-1. Go to Project Settings > Pipelines > Service connections > New service connection > Azure Resource Manager
-i. Identity type = App registration or managed identity (manual)
-ii. Credential = Workload identity federation
-iii. Service Connection Name = The name of the service connection (e.g. Dev)
-iV. Directory (tenant) Id = Tenant Id, can be found in Azure Portal
-6. Click Next
-7. Copy the Issuer and Subject Identifier for later use
-8. Scope level = Subscription
-9. Subscription ID and Subscription Name can be found in the Azure Portal
-10. Application (client) ID = The client id of your app registration for the environment.
-
-You now need to create a federated credential on your app registration.
-1.	Find your app registration in the Entra Id
-2.	Go to Manage > Certificates & secrets > Federated credentials > + Add credential
-i.	For 'Federated credential scenario' select 'Other issuer'
-ii.	Issuer = Paste the issuer (copied in earlier step)
-iii.	Type = Explicit subject identifier
-iV.	Value = Paste the subject (copied in earlier step)
- V.	Name = Name of your choice (e.g. Pipeline)
-4. Add the app reg as a owner on the subscription or eventually on the resource group in the subscription
-
-Then head back to ADO and verify and save the service connection.
+Create one **Azure Resource Manager** service connection per environment, named
+`Dev`, `Test`, `UAT` and `Prod`, using workload identity federation. Give its principal
+Azure permissions and the Dataverse application-user permissions needed by the modern
+tools. No Power Platform connection is needed for solution publishing/deployment.
+Keep the existing Library `DataverseAppId`/secret `DataverseSecret` for legacy DAXIF
+operations until the authentication gap described above is closed; the Azure service
+connection itself does not need a client secret.
 
 ## App registration privileges
 Remember to give your app reg permission to assign roles.

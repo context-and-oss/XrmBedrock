@@ -8,10 +8,10 @@ runs:
       with:
         dotnet-version: 10.x
 
-    - name: Setup Node 18
+    - name: Setup Node 22
       uses: actions/setup-node@v4
       with:
-        node-version: 18
+        node-version: 22
 
     - name: Add signtool.exe to path for build
       shell: pwsh
@@ -31,7 +31,11 @@ runs:
       shell: pwsh
       run: |
         if (Test-Path "Setup/InitialSetup") {
-          Copy-Item -Path "Setup/InitialSetup/WebResources" -Destination "src/Dataverse" -Recurse -Force
-          Copy-Item -Path "Setup/InitialSetup/SharedTest" -Destination "test" -Recurse -Force
+          Copy-Item -Path "Setup/InitialSetup/SharedTest/MetadataGenerated" -Destination "test/Tests" -Recurse -Force
           Copy-Item -Path "Setup/InitialSetup/SharedContext" -Destination "src/Shared" -Recurse -Force
         }
+
+        New-Item -ItemType Directory -Force "src/Dataverse/WebResources/typings" | Out-Null
+        Copy-Item -Path "Setup/InitialSetup/WebResourceTypings" -Destination "src/Dataverse/WebResources/typings/XRM" -Recurse -Force
+        dotnet run --project Setup/PostSetup -- --skip-generation
+        if ($LASTEXITCODE -ne 0) { throw 'Offline template setup failed' }

@@ -1,10 +1,31 @@
-# Export solution
 steps:
-- script: '"$(FsiPath)" "$(DaxifPath)/RemoveManagedIdentity.fsx" $(AuthParams) /env:Dev'
-  displayName: 'Remove Managed Identity Before Export'
-
-- script: '"$(FsiPath)" "$(DaxifPath)/SolutionExportDev.fsx" $(AuthParams)'
-  displayName: 'Solution Export Dev'
-
-- script: '"$(FsiPath)" "$(DaxifPath)/EnsureManagedIdentity.fsx" $(AuthParams) /env:Dev /clientid:"$(AzureClientId)" /tenantid:"$(AzureTenantId)"'
-  displayName: 'Ensure Managed Identity'
+  - task: AzureCLI@2
+    displayName: Remove environment-specific plugin managed identity before export
+    inputs:
+      azureSubscription: Dev
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        dotnet tool run xrmsync identity --operation Remove --assembly "$(PluginAssembly)" --ci
+        if ($LASTEXITCODE -ne 0) { throw 'Managed identity removal failed' }
+    env:
+      DataverseUrl: $(DataverseUrl)
+      DataverseCredentialType: azcli
+  - template: run-daxif.yaml
+    parameters:
+      scriptName: SolutionExportDev.fsx
+      arguments: '/env:Dev "/dir:$(Build.ArtifactStagingDirectory)/Dataverse/solutions"'
+      displayName: Export DAXIF extended solution
+  - task: AzureCLI@2
+    displayName: Restore development plugin managed identity
+    condition: always()
+    inputs:
+      azureSubscription: Dev
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        dotnet tool run xrmsync identity --operation Ensure --assembly "$(PluginAssembly)" --client-id "$(AzureClientId)" --tenant-id "$(AzureTenantId)" --ci
+        if ($LASTEXITCODE -ne 0) { throw 'Managed identity restoration failed' }
+    env:
+      DataverseUrl: $(DataverseUrl)
+      DataverseCredentialType: azcli

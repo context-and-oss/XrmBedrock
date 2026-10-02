@@ -38,7 +38,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <returns></returns>
     public OrganizationResponse AssociateEntities(string relationshipName, EntityReference target, EntityReference relatedEntity, [CallerMemberName] string callerMethodName = "")
     {
-        return AssociateEntities(relationshipName, target, new List<EntityReference> { relatedEntity }, callerMethodName);
+        return AssociateEntities(relationshipName, target, [relatedEntity], callerMethodName);
     }
 
     /// <summary>

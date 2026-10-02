@@ -1,0 +1,14 @@
+steps:
+  - task: CopyFiles@2
+    displayName: Stage Dataverse tool configuration and plugin assembly
+    inputs:
+      SourceFolder: $(Build.SourcesDirectory)
+      Contents: |
+        .config/dotnet-tools.json
+        appsettings.json
+        src/Dataverse/Plugins/bin/Release/net462/**
+        src/Tools/Daxif/**
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/Dataverse'
+  - publish: '$(Build.ArtifactStagingDirectory)/Dataverse'
+    artifact: Dataverse
+    displayName: Publish Dataverse artifacts

@@ -5,7 +5,7 @@ namespace Tests;
 
 public class XrmMockupFixture
 {
-    private static readonly object SettingsLock = new object();
+    private static readonly object SettingsLock = new();
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     private static XrmMockupSettings sharedSettings;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
@@ -22,8 +22,8 @@ public class XrmMockupFixture
             {
                 sharedSettings = new XrmMockupSettings
                 {
-                    BasePluginTypes = new Type[] { typeof(Plugin) },
-                    BaseCustomApiTypes = new Tuple<string, Type>[] { new("templatepublisherprefix", typeof(CustomAPI)) },
+                    BasePluginTypes = [typeof(Plugin)],
+                    BaseCustomApiTypes = [new("templatepublisherprefix", typeof(Plugin))],
                     EnableProxyTypes = true,
                     IncludeAllWorkflows = false,
                     MetadataDirectoryPath = Path.Combine("..", "..", "..", "..", "Tests", "MetadataGenerated"),

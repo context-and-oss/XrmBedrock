@@ -1,10 +1,16 @@
-# Sync components
-
-  steps:
-    - script: '"$(FsiPath)" "$(DaxifPath)/PluginSyncDev.fsx" $(AuthParams)'
-      displayName: 'PluginSyncDev'
-
-    - script: '"$(FsiPath)" "$(DaxifPath)/WebresourceSyncDev.fsx" $(AuthParams)'
-      displayName: 'WebResourceSyncDev'
-
-
+steps:
+  - task: AzureCLI@2
+    displayName: Sync plugins, custom APIs and webresources
+    inputs:
+      azureSubscription: Dev
+      scriptType: pscore
+      scriptLocation: inlineScript
+      workingDirectory: $(Build.SourcesDirectory)
+      inlineScript: |
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed' }
+        dotnet tool run xrmsync --ci --prefix templatepublisherprefix --client-id "$(AzureClientId)" --tenant-id "$(AzureTenantId)"
+        if ($LASTEXITCODE -ne 0) { throw 'XrmSync failed' }
+    env:
+      DataverseUrl: $(DataverseUrl)
+      DataverseCredentialType: azcli

@@ -4,16 +4,10 @@ using SharedDataverseLogic;
 
 namespace DataverseLogic;
 
-public class ExtendedTracingService : IExtendedTracingService
+public class ExtendedTracingService(ITracingService tracingService, ILogger pluginTelemetryLogger) : IExtendedTracingService
 {
-    private readonly ITracingService tracingService;
-    private readonly ILogger pluginTelemetryLogger;
-
-    public ExtendedTracingService(ITracingService tracingService, Microsoft.Xrm.Sdk.PluginTelemetry.ILogger pluginTelemetryLogger)
-    {
-        this.tracingService = tracingService;
-        this.pluginTelemetryLogger = pluginTelemetryLogger;
-    }
+    private readonly ITracingService tracingService = tracingService;
+    private readonly ILogger pluginTelemetryLogger = pluginTelemetryLogger;
 
     public void Trace(string format, params object[] args)
     {

@@ -207,7 +207,7 @@ namespace XrmBedrock.SharedContext
 
         public static T Retrieve<T>(IOrganizationService service, Guid id, params Expression<Func<T, object>>[] attributes) where T : Entity
         {
-            return service.Retrieve(id, attributes);
+            return service.Retrieve(Activator.CreateInstance<T>().LogicalName, id, XrmExtensions.GetColumnSet(attributes)).ToEntity<T>();
         }
 
         public SetStateResponse SetState(IOrganizationService service, State state)
@@ -299,11 +299,6 @@ namespace XrmBedrock.SharedContext
     public static class XrmExtensions
     {
 
-        public static T Retrieve<T>(this IOrganizationService service, Guid id, params Expression<Func<T, object>>[] attributes) where T : Entity
-        {
-            return service.Retrieve(Activator.CreateInstance<T>().LogicalName, id, GetColumnSet(attributes)).ToEntity<T>();
-        }
-
         public static UpsertResponse Upsert(this IOrganizationService service, Entity entity)
         {
             var req = new UpsertRequest() { Target = entity };
@@ -379,36 +374,5 @@ namespace XrmBedrock.SharedContext
             return attributelogicalName.LogicalName;
         }
 
-        public static bool ContainsAttributes<T>(this T entity, params Expression<Func<T, object>>[] attrGetters) where T : Entity
-        {
-            if (attrGetters == null) return true;
-            return attrGetters.Select(a => GetAttributeLogicalName(a).ToLower()).All(a => entity.Contains(a));
-        }
-
-        public static bool RemoveAttributes<T>(this T entity, params Expression<Func<T, object>>[] attrGetters) where T : Entity
-        {
-            if (attrGetters == null) return false;
-            return attrGetters.Select(a => GetAttributeLogicalName(a).ToLower()).Any(a => entity.Attributes.Remove(a));
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
-    public class OptionSetMetadataAttribute : Attribute
-    {
-        public string Name { get; private set; }
-        public int Index { get; set; }
-        public string Description { get; set; }
-        public string Color { get; set; }
-        public int Lcid { get; set; }
-
-        public OptionSetMetadataAttribute(string name, int lcid = 1033, string description = null, string color = null) : this(name, int.MinValue,lcid, description, color) { }
-        public OptionSetMetadataAttribute(string name, int index, int lcid, string description = null, string color = null)
-        {
-            Name = name;
-            Index = index;
-            Description = description;
-            Color = color;
-            Lcid = lcid;
-        }
     }
 }

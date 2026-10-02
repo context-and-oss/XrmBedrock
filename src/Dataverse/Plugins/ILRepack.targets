@@ -1,0 +1,23 @@
+<Project>
+	<!-- Merge dependencies for single-assembly plugin deployment through XrmSync. -->
+	<Target Name="MergePluginAssembly" AfterTargets="Build" Condition="'$(TargetFramework)' == 'net462'">
+		<ItemGroup>
+			<InputAssemblies Include="$(TargetPath)" />
+			<InputAssemblies Include="$(TargetDir)Microsoft.Bcl.AsyncInterfaces.dll" />
+			<InputAssemblies Include="$(TargetDir)Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
+			<InputAssemblies Include="$(TargetDir)Microsoft.Extensions.DependencyInjection.dll" />
+			<InputAssemblies Include="$(TargetDir)Microsoft.Extensions.Logging.Abstractions.dll" />
+			<InputAssemblies Include="$(TargetDir)Newtonsoft.Json.dll" />
+			<InputAssemblies Include="$(TargetDir)SharedContext.dll" />
+			<InputAssemblies Include="$(TargetDir)XrmPluginCore.dll" />
+			<InputAssemblies Include="$(TargetDir)XrmPluginCore.Abstractions.dll" />
+			<InputAssemblies Include="$(TargetDir)SharedDataverseLogic.dll" />
+			<InputAssemblies Include="$(TargetDir)SharedDomain.dll" />
+			<InputAssemblies Include="$(TargetDir)System.Threading.Tasks.Extensions.dll" />
+			<InputAssemblies Include="$(TargetDir)System.Text.Json.dll" />
+		</ItemGroup>
+        <ILRepack InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetDir)Merged.$(TargetFileName)"
+                  KeyFile="$(MSBuildProjectDirectory)/../../../templatecompanyname.snk"
+                  LibraryPath="$(TargetFrameworkDirectory);$(TargetDir)" Parallel="true" />
+  </Target>
+</Project>

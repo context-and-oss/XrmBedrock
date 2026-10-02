@@ -2,5 +2,4 @@ steps:
   - template: sync.yaml
   - template: publish-all.yaml
   - template: export-solution.yaml
-  - template: publish-daxif-scripts.yaml
-      
+  - template: publish-tool-artifacts.yaml
