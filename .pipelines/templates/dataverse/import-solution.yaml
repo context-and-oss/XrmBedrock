@@ -4,22 +4,47 @@ steps:
   - task: UseDotNet@2
     inputs:
       version: 10.x
-  - template: run-daxif.yaml
-    parameters:
+  - task: AzureCLI@2
+    displayName: Reconcile with SolutionExtender and import with PAC
+    inputs:
+      azureSubscription: ${{ upper(parameters.environment) }}
+      scriptType: pscore
+      scriptLocation: inlineScript
       workingDirectory: $(Pipeline.Workspace)/Dataverse
-      scriptName: SolutionImportArg.fsx
-      arguments: '"/env:${{ parameters.environment }}" "/dir:$(Pipeline.Workspace)/Dataverse/solutions"'
-      displayName: Import DAXIF extended solution
+      inlineScript: |
+        $ErrorActionPreference = 'Stop'
+        $environmentUrl = $env:DataverseUrl
+        $solutionName = '$(SolutionName)'
+        $organizationUri = $null
+        if (-not [Uri]::TryCreate($environmentUrl, [UriKind]::Absolute, [ref] $organizationUri) -or $organizationUri.Scheme -ne 'https') {
+            throw 'DataverseUrl must be an explicit HTTPS Dataverse organization URL.'
+        }
+        if ($solutionName -notmatch '^[A-Za-z0-9_]+$') { throw 'SolutionName must be a Dataverse unique solution name.' }
+
+        function Invoke-Tool {
+            param([string] $Tool, [string[]] $ToolArguments)
+            & dotnet tool run $Tool @ToolArguments
+            if ($LASTEXITCODE -ne 0) { throw "$Tool command failed (exit code $LASTEXITCODE)." }
+        }
+
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed.' }
+        Invoke-Tool pac @('auth', 'create', '--environment', $environmentUrl, '--managedIdentity')
+        $connection = @('--environment', $environmentUrl, '--auth', 'azcli')
+        $folder = [IO.Path]::GetFullPath('$(Pipeline.Workspace)/Dataverse/solutions')
+        $zip = Join-Path $folder "$solutionName.zip"
+
+        if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) { throw "Solution archive not found: $zip" }
+        Invoke-Tool solutionextender (@('pre-import', '--zip', $zip, '--apply') + $connection)
+        # Wait for successful import before restoring extended metadata.
+        Invoke-Tool pac @('solution', 'import', '--environment', $environmentUrl, '--path', $zip, '--activate-plugins')
+        Invoke-Tool solutionextender (@('post-import', '--zip', $zip, '--apply', '--reassign-workflows') + $connection)
+    env:
+      DataverseUrl: $(DataverseUrl)
   - template: publish-all.yaml
     parameters:
       workingDirectory: $(Pipeline.Workspace)/Dataverse
       environment: ${{ parameters.environment }}
-  - template: run-daxif.yaml
-    parameters:
-      workingDirectory: $(Pipeline.Workspace)/Dataverse
-      scriptName: SolutionPostImportArg.fsx
-      arguments: '"/env:${{ parameters.environment }}" "/dir:$(Pipeline.Workspace)/Dataverse/solutions"'
-      displayName: Apply DAXIF extended solution post-import state
   - task: AzureCLI@2
     displayName: Link target environment plugin managed identity
     inputs:

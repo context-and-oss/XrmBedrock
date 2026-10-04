@@ -7,7 +7,6 @@ steps:
         .config/dotnet-tools.json
         appsettings*.json
         src/Dataverse/Plugins/bin/Release/net462/**
-        src/Tools/Daxif/**
       TargetFolder: '$(Build.ArtifactStagingDirectory)/Dataverse'
   - publish: '$(Build.ArtifactStagingDirectory)/Dataverse'
     artifact: Dataverse

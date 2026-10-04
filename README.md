@@ -61,42 +61,35 @@ shared/existing solution, and always inspect a dry run first. `--prefix` must ma
 solution publisher prefix. Sync does not create the Dataverse solution/publisher: create
 those in your environment before running the generators or sync.
 
-## Remaining DAXIF extended-solution support
+## Solution export and deployment
 
-`src/Tools` is retained **only** for DAXIF's extended-solution workflow, until a
-replacement tool supports it. Its minimal dependency-host project restores DAXIF
-and stages the runtime when built; no legacy binaries are checked in or packaged.
-See `src/Tools/README.md` for Windows/.NET Framework F# Interactive usage.
+PAC handles solution export, import and publish. SolutionExtender captures extended
+metadata and performs unmanaged pre-/post-import reconciliation. Both tools are pinned
+in `.config/dotnet-tools.json`; there is no DAXIF runtime or F# Interactive dependency.
 
-Export uses `extended = true` and preserves the original revision increment.
-Deployment runs `ExtendedSolution.PreImport`, imports the solution, publishes
-customizations, then runs `ExtendedSolution.PostImport` against the same archive.
-The default is unmanaged, matching the original pipeline. The complete export
-folder, scripts and restored DAXIF runtime travel together in the Dataverse artifact.
-Generators, plugins, Custom APIs, webresources and managed identities continue to
-use the new dotnet tools. No other legacy DAXIF workflows have been restored.
+Export preserves the revision increment, exports with PAC and immediately captures
+extended metadata from the same source. Deployment runs **pre-import → synchronous
+PAC import → post-import → PAC publish**, stopping on any failure. All phases use
+the same unmanaged ZIP. Legacy DAXIF extended artifacts must be freshly exported and
+captured with SolutionExtender before deploying; managed reconciliation is unsupported.
+
+**Reconciliation can delete shared components.** Review plans and back up first.
+The deployment pipeline applies changes and restores workflow ownership/state.
 
 ## Azure DevOps tool authentication
 
-Generation and sync run inside `AzureCLI@2` tasks with the Azure service connection
-(`Dev` by default) and `DataverseCredentialType=azcli`. Azure Resource Manager service
-connections can continue using **workload identity federation**. No Power Platform
-service connection is needed for publishing or solution build/deployment.
+Generation, sync and solution operations run inside `AzureCLI@2` tasks using each
+Azure Resource Manager service connection and its authenticated Azure CLI session.
+Workload identity federation is supported. PAC uses `--managedIdentity` (default Azure
+identity); SolutionExtender uses `--auth azcli`. Both receive the same explicit
+`DataverseUrl`. The service connection principal needs Dataverse application-user
+permissions; no `DataverseAppId`/`DataverseSecret` variable-group credentials or Power
+Platform service connection are needed for solution publishing/deployment.
 
-**Temporary authentication gap:** retained DAXIF 5.6.0 cannot reuse the federated
-Azure CLI session. Extended solution processing and `Solution.PublishAll` therefore
-continue using `DataverseAppId` and secret `DataverseSecret` from each environment's
-Azure DevOps Library variable group, as before. The scripts pass these through
-DAXIF's existing client-secret arguments in memory; no secret is stored in source or
-placed on the process command line. This separate legacy secret is not a requirement
-for the Azure service connection. Both principals need their respective Dataverse
-application-user permissions. Remove the library-secret dependency when the
-extended-solution workflow can use the modern connection tools.
-
-Dataverse artifacts include the manifest, appsettings, merged plugin assembly,
-extended export folder and minimal DAXIF scripts/runtime. The optional
-`CopyUATToTest.yaml` environment-copy/data-transfer workflow still uses Power Platform
-connections; it is separate from solution build/deployment.
+Dataverse artifacts include the pinned tool manifest, appsettings, merged plugin
+assembly and extended ZIP. The optional `CopyUATToTest.yaml`
+environment-copy/data-transfer workflow still uses Power Platform connections;
+it is separate from solution build/deployment.
 
 # Azure Setup
 
@@ -138,8 +131,6 @@ Note: The pipeline template uses Dev, Test, UAT, Prod.
 The template assumes the following variables exist.
 * ResourceGroupName
 * DataverseUrl
-* DataverseAppId (temporary legacy DAXIF application ID)
-* DataverseSecret (secret variable; temporary legacy DAXIF credential)
 * AzureClientId
 * AzureTenantId (Needed for the managed identity record)
 * AzureClientEAObjectId (Object id of the Enterprise Application related to the App registration)
@@ -149,9 +140,6 @@ Create one **Azure Resource Manager** service connection per environment, named
 `Dev`, `Test`, `UAT` and `Prod`, using workload identity federation. Give its principal
 Azure permissions and the Dataverse application-user permissions needed by the modern
 tools. No Power Platform connection is needed for solution publishing/deployment.
-Keep the existing Library `DataverseAppId`/secret `DataverseSecret` for legacy DAXIF
-operations until the authentication gap described above is closed; the Azure service
-connection itself does not need a client secret.
 
 ## App registration privileges
 Remember to give your app reg permission to assign roles.

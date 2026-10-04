@@ -388,9 +388,3 @@ artifacts/
 PostSetup.log
 appsettings.local.json
 /src/Dataverse/WebResources/dist/
-
-# Restored runtime and exported extended solutions
-/src/Tools/Daxif/bin/
-/src/Tools/Daxif/solutions/
-
-/src/Tools/Daxif/runtime/

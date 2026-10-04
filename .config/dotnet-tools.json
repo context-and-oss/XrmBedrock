@@ -35,6 +35,20 @@
         "xrmmockup-metadata"
       ],
       "rollForward": false
+    },
+    "microsoft.powerapps.cli.tool": {
+      "version": "2.12.2",
+      "commands": [
+        "pac"
+      ],
+      "rollForward": false
+    },
+    "solutionextender": {
+      "version": "1.0.0",
+      "commands": [
+        "solutionextender"
+      ],
+      "rollForward": false
     }
   }
 }

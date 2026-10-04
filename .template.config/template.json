@@ -178,10 +178,7 @@
             "**/core",
             "PostSetup.log",
             "bin/**",
-            "docs/validation-*.md",
-            "src/Tools/**/bin/**",
-            "src/Tools/Daxif/solutions/**",
-            "src/Tools/Daxif/runtime/**"
+            "docs/validation-*.md"
           ]
         }
       ]

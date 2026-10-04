@@ -11,11 +11,50 @@ steps:
     env:
       DataverseUrl: $(DataverseUrl)
       DataverseCredentialType: azcli
-  - template: run-daxif.yaml
-    parameters:
-      scriptName: SolutionExportDev.fsx
-      arguments: '/env:Dev "/dir:$(Build.ArtifactStagingDirectory)/Dataverse/solutions"'
-      displayName: Export DAXIF extended solution
+  - task: AzureCLI@2
+    displayName: Export with PAC and capture extended metadata
+    inputs:
+      azureSubscription: Dev
+      scriptType: pscore
+      scriptLocation: inlineScript
+      workingDirectory: $(Build.SourcesDirectory)
+      inlineScript: |
+        $ErrorActionPreference = 'Stop'
+        $environmentUrl = $env:DataverseUrl
+        $solutionName = '$(SolutionName)'
+        $organizationUri = $null
+        if (-not [Uri]::TryCreate($environmentUrl, [UriKind]::Absolute, [ref] $organizationUri) -or $organizationUri.Scheme -ne 'https') {
+            throw 'DataverseUrl must be an explicit HTTPS Dataverse organization URL.'
+        }
+        if ($solutionName -notmatch '^[A-Za-z0-9_]+$') { throw 'SolutionName must be a Dataverse unique solution name.' }
+
+        function Invoke-Tool {
+            param([string] $Tool, [string[]] $ToolArguments)
+            & dotnet tool run $Tool @ToolArguments
+            if ($LASTEXITCODE -ne 0) { throw "$Tool command failed (exit code $LASTEXITCODE)." }
+        }
+
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed.' }
+        Invoke-Tool pac @('auth', 'create', '--environment', $environmentUrl, '--managedIdentity')
+        $connection = @('--environment', $environmentUrl, '--auth', 'azcli')
+        $folder = [IO.Path]::GetFullPath('$(Build.ArtifactStagingDirectory)/Dataverse/solutions')
+        $zip = Join-Path $folder "$solutionName.zip"
+
+        $versionOutput = Invoke-Tool pac @('solution', 'online-version', '--environment', $environmentUrl, '--solution-name', $solutionName)
+        $versionOutput | Write-Host
+        $versions = @([regex]::Matches(($versionOutput -join "`n"), '\b\d+\.\d+\.\d+\.\d+\b') | ForEach-Object { $_.Value } | Select-Object -Unique)
+        if ($versions.Count -ne 1) { throw 'Could not determine a unique four-part online solution version; export stopped.' }
+        $version = [Version]::Parse($versions[0])
+        $nextVersion = '{0}.{1}.{2}.{3}' -f $version.Major, $version.Minor, $version.Build, ($version.Revision + 1)
+        Invoke-Tool pac @('solution', 'online-version', '--environment', $environmentUrl, '--solution-name', $solutionName, '--solution-version', $nextVersion)
+        New-Item -ItemType Directory -Path $folder -Force | Out-Null
+        $plainZip = Join-Path $folder "$($solutionName)_pac.zip"
+        Invoke-Tool pac @('solution', 'export', '--environment', $environmentUrl, '--name', $solutionName, '--path', $plainZip, '--managed', 'false', '--overwrite')
+        Invoke-Tool solutionextender (@('extend', '--zip', $plainZip, '--output', $zip, '--overwrite') + $connection)
+        Remove-Item -LiteralPath $plainZip
+    env:
+      DataverseUrl: $(DataverseUrl)
   - task: AzureCLI@2
     displayName: Restore development plugin managed identity
     condition: always()

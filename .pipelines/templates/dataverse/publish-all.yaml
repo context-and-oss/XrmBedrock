@@ -6,9 +6,30 @@ parameters:
     type: string
     default: Dev
 steps:
-  - template: run-daxif.yaml
-    parameters:
+  - task: AzureCLI@2
+    displayName: Publish Dataverse customizations with PAC
+    inputs:
+      azureSubscription: ${{ upper(parameters.environment) }}
+      scriptType: pscore
+      scriptLocation: inlineScript
       workingDirectory: ${{ parameters.workingDirectory }}
-      scriptName: PublishAllArg.fsx
-      arguments: '"/env:${{ parameters.environment }}"'
-      displayName: Publish Dataverse customizations with DAXIF
+      inlineScript: |
+        $ErrorActionPreference = 'Stop'
+        $environmentUrl = $env:DataverseUrl
+        $organizationUri = $null
+        if (-not [Uri]::TryCreate($environmentUrl, [UriKind]::Absolute, [ref] $organizationUri) -or $organizationUri.Scheme -ne 'https') {
+            throw 'DataverseUrl must be an explicit HTTPS Dataverse organization URL.'
+        }
+
+        function Invoke-Tool {
+            param([string] $Tool, [string[]] $ToolArguments)
+            & dotnet tool run $Tool @ToolArguments
+            if ($LASTEXITCODE -ne 0) { throw "$Tool command failed (exit code $LASTEXITCODE)." }
+        }
+
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed.' }
+        Invoke-Tool pac @('auth', 'create', '--environment', $environmentUrl, '--managedIdentity')
+        Invoke-Tool pac @('solution', 'publish', '--environment', $environmentUrl)
+    env:
+      DataverseUrl: $(DataverseUrl)
