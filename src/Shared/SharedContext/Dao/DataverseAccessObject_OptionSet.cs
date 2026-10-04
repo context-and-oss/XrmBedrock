@@ -58,16 +58,10 @@ public partial class DataverseAccessObject : IDataverseAccessObject
         return (RetrieveEntityResponse)Execute(retrieveDetails, callerMethodName);
     }
 
-    private OptionSetMetadata GetOptionsFromAttributeMetadata(AttributeMetadata attributeMetadata)
+    private OptionSetMetadata GetOptionsFromAttributeMetadata(AttributeMetadata attributeMetadata) => attributeMetadata switch
     {
-        switch (attributeMetadata)
-        {
-            case PicklistAttributeMetadata a:
-                return a.OptionSet;
-            case StatusAttributeMetadata a:
-                return a.OptionSet;
-            default:
-                throw new Exception($"Invalid attempt to treat attribute {attributeMetadata.LogicalName} as an optionset-like attribute. It's of type {attributeMetadata.AttributeTypeName}");
-        }
-    }
+        PicklistAttributeMetadata picklist => picklist.OptionSet,
+        StatusAttributeMetadata status => status.OptionSet,
+        _ => throw new Exception($"Invalid attempt to treat attribute {attributeMetadata.LogicalName} as an optionset-like attribute. It's of type {attributeMetadata.AttributeTypeName}"),
+    };
 }

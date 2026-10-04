@@ -4,14 +4,11 @@ using SharedContext.Dao;
 
 namespace DataverseLogic;
 
-public class AdminDataverseAccessObjectService : DataverseAccessObject, IAdminDataverseAccessObjectService
-{
-    public AdminDataverseAccessObjectService(IOrganizationServiceFactory organizationServiceFactory, ILogger logger)
 #pragma warning disable CA1848 // Use the LoggerMessage delegates
 #pragma warning disable CA2254 // Template should be a static expression
-        : base(organizationServiceFactory?.CreateOrganizationService(null), logger)
+public class AdminDataverseAccessObjectService(IOrganizationServiceFactory organizationServiceFactory, ILogger logger)
+    : DataverseAccessObject(organizationServiceFactory?.CreateOrganizationService(null), logger), IAdminDataverseAccessObjectService
 #pragma warning restore CA2254 // Template should be a static expression
 #pragma warning restore CA1848 // Use the LoggerMessage delegates
-    {
-    }
+{
 }

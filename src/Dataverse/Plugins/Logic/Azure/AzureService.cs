@@ -10,21 +10,14 @@ using System.Xml.Serialization;
 
 namespace DataverseLogic.Azure;
 
-public class AzureService
+public class AzureService(AzureConfig azureConfig, ITracingService tracingService, IManagedIdentityService managedIdentityService)
 {
 #pragma warning disable S1450 // Private fields only used as local variables in methods should become local variables
-    private readonly AzureConfig azureConfig;
-    private readonly ITracingService tracingService;
-    private readonly IManagedIdentityService managedIdentityService;
+    private readonly AzureConfig azureConfig = azureConfig;
+    private readonly ITracingService tracingService = tracingService;
+    private readonly IManagedIdentityService managedIdentityService = managedIdentityService;
 #pragma warning restore S1450 // Private fields only used as local variables in methods should become local variables
-    private static readonly string[] StorageScopes = new string[] { "https://storage.azure.com/.default" };
-
-    public AzureService(AzureConfig azureConfig, ITracingService tracingService, IManagedIdentityService managedIdentityService)
-    {
-        this.azureConfig = azureConfig;
-        this.tracingService = tracingService;
-        this.managedIdentityService = managedIdentityService;
-    }
+    private static readonly string[] StorageScopes = ["https://storage.azure.com/.default"];
 
     // Generic way of sending messages to the storage queue
 #pragma warning disable S1144 // Unused private types or members should be removed
