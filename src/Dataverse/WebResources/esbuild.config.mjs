@@ -34,7 +34,7 @@ for (let i = 0; i < entries.length; i++) {
 }
 
 // Never leave removed sources or the other mode's bundles deployable.
-rmSync("dist", { recursive: true, force: true });
+if (!watchMode) rmSync("dist", { recursive: true, force: true });
 mkdirSync(outputDir, { recursive: true });
 
 if (entries.length === 0) {

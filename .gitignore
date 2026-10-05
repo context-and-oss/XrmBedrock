@@ -388,3 +388,6 @@ artifacts/
 PostSetup.log
 appsettings.local.json
 /src/Dataverse/WebResources/dist/
+
+# Webresource test scratch directories
+/src/Dataverse/WebResources/.test-*/

@@ -26,6 +26,6 @@
 
   <ItemGroup>
     <Content Include="**\*"
-             Exclude="test\Tests\MetadataGenerated\**;src\Shared\SharedContext\Generated\**;src\Dataverse\WebResources\dist\**;src\Dataverse\WebResources\typings\XRM\**;Setup\InitialSetup\**;docs\validation-*.md;bin\**;artifacts\**;nupkg\**;**\core;PostSetup.log;src\Azure\**\bin\**;src\Dataverse\**\bin\**;src\Shared\**\bin\**;test\**\bin\**;Setup\**\bin\**;**\obj\**;**\node_modules\**;**\.git\**;**\.github\**;XrmBedrock.Template.csproj;LICENSE;templatecompanyname.snk;plugincert.pfx" />
+             Exclude="src\Dataverse\WebResources\.test-*\**;test\Tests\MetadataGenerated\**;src\Shared\SharedContext\Generated\**;src\Dataverse\WebResources\dist\**;src\Dataverse\WebResources\typings\XRM\**;Setup\InitialSetup\**;docs\validation-*.md;bin\**;artifacts\**;nupkg\**;**\core;PostSetup.log;src\Azure\**\bin\**;src\Dataverse\**\bin\**;src\Shared\**\bin\**;test\**\bin\**;Setup\**\bin\**;**\obj\**;**\node_modules\**;**\.git\**;**\.github\**;XrmBedrock.Template.csproj;LICENSE;templatecompanyname.snk;plugincert.pfx" />
   </ItemGroup>
 </Project>

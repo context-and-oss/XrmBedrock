@@ -58,6 +58,99 @@ MSBuild task. Authenticode signing is optional (`-p:PackAndSignPlugin=true` on W
 required if using certificate-based plugin managed identity. Webresources are bundled
 from TypeScript into `dist/<prefix>_<project>/` (empty projects build successfully); XrmSync uses that bundle folder and prepends `<publisher>_<solution>/` to each relative path.
 
+## HTML webresource pages
+
+HTML pages live in the existing `src/Dataverse/WebResources` project, alongside form scripts.
+The default contains no pages or page templates. Add a folder for each page manually:
+
+```text
+src/Dataverse/WebResources/
+  src/html/<page-name>/
+    index.html
+    main.ts
+    styles.css
+```
+
+Use kebab-case page folders and camel-case TypeScript filenames. Each immediate folder
+under `src/html/` containing `index.html` is a separate page; folders without that file
+can hold shared code. All three entry files are required, even when the TypeScript or
+stylesheet is empty.
+
+### HTML shell
+
+`index.html` is the document shell, not the final deployed file. Include a doctype,
+`lang`, a non-empty title and viewport metadata, plus **exactly one** `<!--STYLE-->` and
+`<!--SCRIPT-->` marker. The build replaces the markers with bundled CSS and JavaScript:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page title</title>
+    <!--STYLE-->
+  </head>
+  <body>
+    <!-- Page markup goes here. -->
+    <!--SCRIPT-->
+  </body>
+</html>
+```
+
+Implement browser behavior in `main.ts` and styling in `styles.css`. An unused `main.ts`
+can contain `export {};` to remain a TypeScript module; `styles.css` may be empty.
+HTML pages execute their bundled JavaScript directly, unlike form-event scripts: they
+do not need exported handlers on the `WebResources` global.
+
+### Self-contained assets and security
+
+- Each deployed page must be one self-contained HTML file. Do not add external
+  `<script src>`, stylesheet `<link>`, image URLs, `srcset` or CDN references.
+- Import JavaScript/TypeScript dependencies from `main.ts`. CSS is bundled separately
+  from `styles.css`; local CSS imports and supported image/font assets are embedded.
+  Import images from TypeScript or reference local assets with CSS `url(...)` so the
+  build converts them to data URLs. Merely writing a local image path in HTML does not
+  embed the file. Supported embedded asset formats are PNG, JPG/JPEG, GIF, SVG, WebP,
+  WOFF and WOFF2.
+- Use safe DOM construction (`createElement`, `append`, `textContent`), not unsanitized
+  HTML insertion. Handle rejected promises; do not disable the security checks.
+- Use typed `@delegateas/xrmquery` for Dataverse queries and shared generated typings
+  under `typings/`. Regenerate types with `dotnet tool run xdt` from the solution root;
+  never edit generated declarations or runtime option sets.
+- HTML linting enforces accessibility, including labels, image alternative text,
+  explicit button types and valid headings. TypeScript uses DataverseHtml's type-aware,
+  promise, unsafe DOM/eval/regexp, import, naming and complexity checks.
+
+### Build, preview and removal
+
+Run these commands from `src/Dataverse/WebResources`:
+
+```bash
+npm run lint
+npm run typecheck
+npm run build                    # typecheck + strict lint + scripts and HTML
+npm run watch                    # rebuild scripts and HTML on save
+```
+
+`npm run build` fails on type or lint errors. Watch reports HTML lint errors without
+stopping rebuilds; use a full build before deployment. Restart watch after adding or
+removing page folders. Do not edit generated `dist/` files.
+
+Pages become `dist/<prefix>_<project>/html/<page-name>.html`, sharing the existing
+package, typings, solution build and XrmSync deployment entry. From the solution root,
+run `dotnet tool run xrmsync webresources --profile default` to sync the built resources;
+add `--watch` for upload-on-change. Preview a deployed page at
+`<DataverseUrl>/WebResources/<publisher>_<solution>/html/<page-name>.html`.
+There is no local server or offline runtime.
+
+**Webresource sync includes deletions** (`NoDelete: false`). Removing a page folder,
+then running a full build and sync, removes its obsolete deployed resource. Build the
+entire webresource project before syncing: XrmSync treats the shared output folder as
+the source of truth for the configured solution's JavaScript, HTML and CSS webresources,
+and can delete remote resources absent from that folder. Review a dry run before applying
+changes, especially when the solution contains resources maintained elsewhere.
+
 ## Webresource bundle modes
 
 Webresources use `WebResources.esproj` with the Visual Studio JavaScript SDK.

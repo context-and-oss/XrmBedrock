@@ -49,7 +49,7 @@ This is a mono repository with multiple connected systems. All these systems use
     - [*Api](src/Azure/*Api): Minimal Api Web App that uses services from DataverseService.
   - [Dataverse](src/Dataverse): Contains the code running in Dataverse.
     - [SharedPluginLogic](src/Dataverse/SharedPluginLogic): A shared code project. Provides plugin code for the synchronous business logic.
-    - [WebResources](src/Dataverse/WebResources): Provides frontend code for Dataverse.
+    - [WebResources](src/Dataverse/WebResources): Form-event scripts and self-contained HTML pages (`src/html/`) with DataverseHtml linting.
     - [Plugins](src/Dataverse/Plugins): Read only! A .NET 4.6.2 class library. The output of this project will be deployed to Dataverse. Uses the output of SharedPluginLogic.
     - [PluginsNetCore](src/Dataverse/PluginsNetCore): Read only! A modern .NET class library. The output of this project will be used in tests. Uses the output of SharedPluginLogic. No files should be added to this project directly.
   - [Shared](src/Shared): Contains code that is shared between Azure and Dataverse business logic.

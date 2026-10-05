@@ -178,7 +178,9 @@
             "**/core",
             "PostSetup.log",
             "bin/**",
-            "docs/validation-*.md"
+            "docs/validation-*.md",
+            "src/Dataverse/WebResources/.test-*/**",
+            "src/Dataverse/WebResources/dist/**"
           ]
         }
       ]
