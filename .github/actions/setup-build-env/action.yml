@@ -8,10 +8,11 @@ runs:
       with:
         dotnet-version: 10.x
 
-    - name: Setup Node 22
+    - name: Setup Node.js 24 LTS
       uses: actions/setup-node@v4
       with:
-        node-version: 22
+        node-version: '24.x'
+        check-latest: true
 
     - name: Add signtool.exe to path for build
       shell: pwsh

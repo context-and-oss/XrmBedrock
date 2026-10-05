@@ -1,7 +1,9 @@
 # XrmBedrock
 
 A dotnet-new template for Dataverse plugins, Custom APIs, TypeScript webresources,
-XrmMockup tests and optional Azure services. Requires .NET 10 SDK and Node.js 22+.
+XrmMockup tests and optional Azure services. Requires .NET 10 SDK and Node.js 24 LTS.
+Run `nvm install && nvm use` from the solution root (`.nvmrc` selects Node.js 24).
+GitHub Actions and Azure DevOps also resolve the latest available 24.x release.
 
 ## Create a project
 
@@ -55,6 +57,56 @@ Dependencies are merged with a cross-platform ILRepack
 MSBuild task. Authenticode signing is optional (`-p:PackAndSignPlugin=true` on Windows),
 required if using certificate-based plugin managed identity. Webresources are bundled
 from TypeScript into `dist/<prefix>_<project>/` (empty projects build successfully); XrmSync uses that bundle folder and prepends `<publisher>_<solution>/` to each relative path.
+
+## Webresource bundle modes
+
+Webresources use `WebResources.esproj` with the Visual Studio JavaScript SDK.
+Open the solution in Visual Studio with JavaScript/TypeScript project support
+installed. Build and Clean use the same npm commands as the command line;
+builds install locked dependencies with `npm ci`. There is no local web server:
+Dataverse hosts the generated bundles. Node.js 24 must be available on `PATH`.
+
+
+Run these commands from `src/Dataverse/WebResources`:
+
+```bash
+npm ci
+npm run build                 # defaults to single (package.json config.bundleMode)
+npm run build:single          # dist/<prefix>_<project>/WebResources.js
+npm run build:individual      # one bundle per source file, preserving relative paths
+npm run watch:single
+npm run watch:individual
+npm test
+```
+
+Set `config.bundleMode` in `package.json` to `single` or `individual` to choose the
+mode used by ordinary npm builds, post-setup and solution builds. Override it for
+one solution build with `dotnet build -p:WebResourcesBundleMode=individual`.
+Both modes include dependencies and source maps, exclude `.d.ts` entries, and clear
+old output when building or switching modes. Empty projects build successfully.
+Restart watch after adding or removing entry files; edits to existing files and
+their dependencies rebuild automatically.
+
+In **single** mode, register the same `WebResources.js` library on every form.
+In **individual** mode, register the relevant file as before. Export handlers from
+TypeScript modules; both modes expose the same file-based global namespace:
+
+```typescript
+// src/<prefix>_<project>/forms/account.ts
+export function onLoad(context: Xrm.Events.EventContext): void {
+    const form = context.getFormContext();
+    // Form-specific logic goes here; importing the module should not run it.
+}
+```
+
+Register `WebResources.forms.account.onLoad` as the event handler and enable
+**Pass execution context as first parameter**. Different files may export the same
+handler names without collisions. Single mode loads all entry modules, so keep
+form-specific work inside handlers rather than executing it at module load time.
+Existing handlers explicitly attached to `window` keep their names; unexported
+module-local functions are not public event handlers. A source file cannot share
+its extensionless path with a source folder (for example `forms.ts` and
+`forms/account.ts`) because their public namespaces would conflict.
 
 **XrmSync normally removes obsolete components.** Use `--additive` when deploying to a
 shared/existing solution, and always inspect a dry run first. `--prefix` must match the

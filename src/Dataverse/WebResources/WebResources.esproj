@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.6887863">
+  <PropertyGroup>
+    <!-- Use the lockfile and retain the same install behavior in VS and dotnet builds. -->
+    <ShouldRunNpmInstall>false</ShouldRunNpmInstall>
+    <ShouldRunBuildScript>true</ShouldRunBuildScript>
+    <BuildCommand Condition="'$(WebResourcesBundleMode)' == ''">npm run build</BuildCommand>
+    <BuildCommand Condition="'$(WebResourcesBundleMode)' != ''">npm run build -- --mode=$(WebResourcesBundleMode)</BuildCommand>
+    <CleanCommand>npm run clean</CleanCommand>
+    <BuildOutputFolder>$(MSBuildProjectDirectory)/dist</BuildOutputFolder>
+    <!-- Dataverse hosts these scripts; this project does not launch a web server. -->
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+  <Target Name="NpmCi" BeforeTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Exec Command="npm ci" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+</Project>

@@ -12,7 +12,12 @@
     "concurrently": "concurrently",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive:true, force:true})\"",
     "clean-all": "node -e \"require('fs').rmSync('dist', {recursive:true, force:true})\"",
-    "build": "tsc --noEmit && node esbuild.config.mjs"
+    "build": "tsc --noEmit && node esbuild.config.mjs",
+    "build:single": "npm run build -- --mode=single",
+    "build:individual": "npm run build -- --mode=individual",
+    "watch:single": "node esbuild.config.mjs --mode=single --watch",
+    "watch:individual": "node esbuild.config.mjs --mode=individual --watch",
+    "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
@@ -23,5 +28,8 @@
   },
   "dependencies": {
     "@delegateas/xrmquery": "7.0.0-preview.1"
+  },
+  "config": {
+    "bundleMode": "single"
   }
 }

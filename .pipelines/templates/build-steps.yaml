@@ -1,4 +1,6 @@
 steps:
+  - template: setup-node.yaml
+
   - task: DotNetCoreCLI@2
     displayName: 'dotnet restore'
     inputs:
