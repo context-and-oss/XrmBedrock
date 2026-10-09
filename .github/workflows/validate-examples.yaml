@@ -1,4 +1,4 @@
-name: Validate Example Branches
+name: Validate Template
 
 on:
   push:
@@ -8,79 +8,54 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
-  validate-framework:
+  validate-template:
     runs-on: windows-latest
+    env:
+      TEMPLATE_OUTPUT: ${{ runner.temp }}/template-validation
+      TEMPLATE_PACKAGES: ${{ runner.temp }}/template-packages
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-build-env
-      - name: Restore dependencies
-        run: dotnet restore templatecompanyname.slnx
-      - name: Build
-        run: dotnet build templatecompanyname.slnx --no-restore --configuration Release
-      - name: Test
-        run: dotnet test templatecompanyname.slnx --no-build --configuration Release
 
-  discover-examples:
-    runs-on: ubuntu-latest
-    outputs:
-      branches: ${{ steps.get-branches.outputs.branches }}
-    steps:
-      - uses: actions/checkout@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
         with:
-          fetch-depth: 0
-      - name: Get example branches
-        id: get-branches
-        run: |
-          branches=$(git ls-remote --heads origin | grep "refs/heads/examples/" | sed 's|.*refs/heads/||' | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          echo "branches=$branches" >> $GITHUB_OUTPUT
-          echo "Found branches: $branches"
+          dotnet-version: 10.x
 
-  validate-examples:
-    if: always()
-    runs-on: windows-latest
-    needs: [validate-framework, discover-examples]
-    strategy:
-      fail-fast: false
-      matrix:
-        branch: ${{ fromJson(needs.discover-examples.outputs.branches) }}
-    steps:
-      - uses: actions/checkout@v4
+      - name: Pack template in Release
+        shell: pwsh
+        run: dotnet pack XrmBedrock.Template.csproj --configuration Release --output "$env:TEMPLATE_PACKAGES"
+
+      - name: Install packed template
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem "$env:TEMPLATE_PACKAGES/XrmBedrock.*.nupkg")
+          if ($packages.Count -ne 1) { throw 'Expected exactly one packed template' }
+          $package = $packages[0]
+          dotnet new install $package.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Template installation failed' }
+
+      - name: Create solution from packed template
+        shell: pwsh
+        run: |
+          # Do not run the interactive Dataverse post-action; use offline sample data below.
+          dotnet new xrmbedrock --name TemplateValidation --company-name ValidationCompany --publisher-prefix val --solution ValidationSolution --output "$env:TEMPLATE_OUTPUT" --allow-scripts no
+          if ($LASTEXITCODE -ne 0) { throw 'Template creation failed' }
+          if (-not (Test-Path "$env:TEMPLATE_OUTPUT/ValidationCompany.slnx")) {
+            throw 'The generated solution was not renamed correctly'
+          }
+          if (-not (Test-Path "$env:TEMPLATE_OUTPUT/test/Tests/DataProducer/DataProducer_SampleArea.cs")) {
+            throw 'The packed template is missing the sample data producer'
+          }
+
+      - name: Set up generated solution with sample data
+        uses: ./.github/actions/setup-build-env
         with:
-          ref: ${{ matrix.branch }}
-          fetch-depth: 0
+          working-directory: ${{ env.TEMPLATE_OUTPUT }}
 
-      - name: Configure git
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Lets an example branch keep files it owns via `merge=ours` in .gitattributes
-          git config merge.ours.driver true
-
-      - name: Merge changes into example
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            git fetch origin ${{ github.head_ref }}
-            git merge origin/${{ github.head_ref }} --no-edit
-          else
-            git fetch origin main
-            git merge origin/main --no-edit
-          fi
-
-      - uses: ./.github/actions/setup-build-env
-
-      - name: Restore dependencies
-        run: dotnet restore templatecompanyname.slnx
-
-      - name: Build example
-        run: dotnet build templatecompanyname.slnx --no-restore --configuration Release
-
-      - name: Test example
-        run: dotnet test templatecompanyname.slnx --no-build --configuration Release
-
-      - name: Push merged branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: git push origin ${{ matrix.branch }}
+      - name: Build generated solution in Release
+        working-directory: ${{ env.TEMPLATE_OUTPUT }}
+        run: dotnet build ValidationCompany.slnx --no-restore --configuration Release
