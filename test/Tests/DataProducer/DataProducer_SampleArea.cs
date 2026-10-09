@@ -13,6 +13,8 @@ public partial class DataProducer
     /// Pass null to create a contact with defaults, or pass a contact with the values required by your test.
     /// Uses dao so the contact is created in the requested user context; use elevatedDao for related records that require admin permissions.
     /// </summary>
+    /// <param name="contact">The contact values to preserve, or null to create a contact with defaults.</param>
+    /// <returns>The saved contact with its assigned ID and any missing default values populated.</returns>
     /// <example>
     /// <code>
     /// var contact = Producer.SampleProduceValidContact(null);
