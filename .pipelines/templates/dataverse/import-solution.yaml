@@ -1,24 +1,62 @@
-# Import solution
 parameters:
   environment:
-  powerPlatformSPN:
 steps:
-- script: '"$(FsiPath)" "$(Pipeline.Workspace)/Scripts/SolutionImportArg.fsx" $(AuthParams) /env:${{parameters.environment}} /dir:$(Pipeline.Workspace)/Scripts/solutions'
-  displayName: 'Solution Import ${{parameters.environment}}'
+  - task: UseDotNet@2
+    inputs:
+      version: 10.x
+  - task: AzureCLI@2
+    displayName: Reconcile with SolutionExtender and import with PAC
+    inputs:
+      azureSubscription: ${{ upper(parameters.environment) }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      workingDirectory: $(Pipeline.Workspace)/Dataverse
+      inlineScript: |
+        $ErrorActionPreference = 'Stop'
+        $environmentUrl = $env:DataverseUrl
+        $solutionName = '$(SolutionName)'
+        $organizationUri = $null
+        if (-not [Uri]::TryCreate($environmentUrl, [UriKind]::Absolute, [ref] $organizationUri) -or $organizationUri.Scheme -ne 'https') {
+            throw 'DataverseUrl must be an explicit HTTPS Dataverse organization URL.'
+        }
+        if ($solutionName -notmatch '^[A-Za-z0-9_]+$') { throw 'SolutionName must be a Dataverse unique solution name.' }
 
-- task: PowerPlatformToolInstaller@2
-  inputs:
-    DefaultVersion: true
+        function Invoke-Tool {
+            param([string] $Tool, [string[]] $ToolArguments)
+            & dotnet tool run $Tool @ToolArguments
+            if ($LASTEXITCODE -ne 0) { throw "$Tool command failed (exit code $LASTEXITCODE)." }
+        }
 
-- task: PowerPlatformPublishCustomizations@2
-  inputs:
-    authenticationType: 'PowerPlatformSPN'
-    PowerPlatformSPN: ${{parameters.powerPlatformSPN}}
-    AsyncOperation: true
-    MaxAsyncWaitTime: '60'
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed.' }
+        Invoke-Tool pac @('auth', 'create', '--environment', $environmentUrl, '--managedIdentity')
+        $connection = @('--environment', $environmentUrl, '--auth', 'azcli')
+        $folder = [IO.Path]::GetFullPath('$(Pipeline.Workspace)/Dataverse/solutions')
+        $zip = Join-Path $folder "$solutionName.zip"
 
-- script: '"$(FsiPath)" "$(Pipeline.Workspace)/Scripts/SolutionPostImportArg.fsx" $(AuthParams) /env:${{parameters.environment}} /dir:$(Pipeline.Workspace)/Scripts/solutions'
-  displayName: 'Solution Post Import ${{parameters.environment}}'
-
-- script: '"$(FsiPath)" "$(DaxifPath)/EnsureManagedIdentity.fsx" $(AuthParams) /env:${{parameters.environment}} /clientid:"$(AzureClientId)" /tenantid:"$(AzureTenantId)"'
-  displayName: 'Ensure Managed Identity'
+        if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) { throw "Solution archive not found: $zip" }
+        Invoke-Tool solutionextender (@('pre-import', '--zip', $zip, '--apply') + $connection)
+        # Wait for successful import before restoring extended metadata.
+        Invoke-Tool pac @('solution', 'import', '--environment', $environmentUrl, '--path', $zip, '--activate-plugins')
+        Invoke-Tool solutionextender (@('post-import', '--zip', $zip, '--apply', '--reassign-workflows') + $connection)
+    env:
+      DataverseUrl: $(DataverseUrl)
+  - template: publish-all.yaml
+    parameters:
+      workingDirectory: $(Pipeline.Workspace)/Dataverse
+      environment: ${{ parameters.environment }}
+  - task: AzureCLI@2
+    displayName: Link target environment plugin managed identity
+    inputs:
+      azureSubscription: ${{ upper(parameters.environment) }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      workingDirectory: '$(Pipeline.Workspace)/Dataverse'
+      inlineScript: |
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed' }
+        dotnet tool run xrmsync identity --operation Ensure --assembly "$(PluginAssembly)" --client-id "$(AzureClientId)" --tenant-id "$(AzureTenantId)" --ci
+        if ($LASTEXITCODE -ne 0) { throw 'Managed identity linking failed' }
+    env:
+      DataverseUrl: $(DataverseUrl)
+      DataverseCredentialType: azcli

@@ -1,7 +1,11 @@
 {
   "$schema": "http://json.schemastore.org/template",
   "author": "Delegate A/S",
-  "classifications": ["Dataverse", "Azure", "XRM"],
+  "classifications": [
+    "Dataverse",
+    "Azure",
+    "XRM"
+  ],
   "identity": "DelegateAS.XrmBedrock",
   "name": "XrmBedrock Dataverse + Azure Project",
   "shortName": "xrmbedrock",
@@ -48,13 +52,6 @@
       "defaultValue": "templateresourcegroupname",
       "replaces": "templateresourcegroupname"
     },
-    "dataverseUsername": {
-      "type": "parameter",
-      "datatype": "string",
-      "description": "Dataverse dev environment username (e.g. user@org.onmicrosoft.com)",
-      "defaultValue": "",
-      "replaces": "TEMPLATE_DATAVERSE_USERNAME"
-    },
     "devUrl": {
       "type": "parameter",
       "datatype": "string",
@@ -98,8 +95,14 @@
       "fileRename": "templatepublisherprefix_templateprojectname",
       "parameters": {
         "symbols": [
-          { "type": "ref", "value": "publisherPrefix" },
-          { "type": "ref", "value": "name" }
+          {
+            "type": "ref",
+            "value": "publisherPrefix"
+          },
+          {
+            "type": "ref",
+            "value": "name"
+          }
         ],
         "separator": "_"
       }
@@ -127,7 +130,10 @@
       "generator": "join",
       "parameters": {
         "symbols": [
-          { "type": "ref", "value": "name" }
+          {
+            "type": "ref",
+            "value": "name"
+          }
         ],
         "separator": ""
       },
@@ -167,28 +173,28 @@
             "Setup/**/bin/**",
             "**/obj/**",
             "templatecompanyname.snk",
-            "plugincert.pfx"
+            "plugincert.pfx",
+            "artifacts/**",
+            "**/core",
+            "PostSetup.log",
+            "bin/**",
+            "docs/validation-*.md",
+            "src/Dataverse/WebResources/.test-*/**",
+            "src/Dataverse/WebResources/dist/**"
           ]
         }
       ]
-    },
-    {
-      "source": "src/Tools/Daxif/bin",
-      "target": "src/Tools/Daxif/bin",
-      "copyOnly": [ "**/*" ]
     }
   ],
   "postActions": [
     {
-      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
-      "description": "Restore NuGet packages",
-      "manualInstructions": [{ "text": "Run 'dotnet restore'" }],
-      "continueOnError": true
-    },
-    {
       "actionId": "3A7C4B45-1F5D-4A30-959A-51B88E82B5D2",
-      "description": "Run post-template setup (generate keys, dotnet tool restore, npm install, git init) — follow progress in PostSetup.log",
-      "manualInstructions": [{ "text": "Run 'dotnet run --project Setup/PostSetup'" }],
+      "description": "Set up keys, restore tools, generate Dataverse contexts and test metadata (interactive login may be required)",
+      "manualInstructions": [
+        {
+          "text": "Run 'dotnet run --project Setup/PostSetup'"
+        }
+      ],
       "args": {
         "executable": "dotnet",
         "args": "run --project Setup/PostSetup"

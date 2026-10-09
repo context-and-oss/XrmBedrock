@@ -1,49 +1,85 @@
-import { argv } from "node:process";
 import * as esbuild from "esbuild";
-import * as glob from "glob";
-import { relative, dirname } from "path";
-import { mkdirSync, writeFileSync } from "fs";
-import fs from 'fs';
-import path from 'path';
+import { globSync } from "glob";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import path from "node:path";
 
-const watchMode = (argv.length > 2 && "watch" === argv[2]);
+const args = process.argv.slice(2);
+const watchMode = args.includes("watch") || args.includes("--watch");
+const packageJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
+const modeArgs = args.filter(arg => arg.startsWith("--mode="));
+const mode = modeArgs[0]?.slice("--mode=".length) ?? packageJson.config.bundleMode;
+if (modeArgs.length > 1 || !["single", "individual"].includes(mode) ||
+    args.some(arg => arg !== "watch" && arg !== "--watch" && !arg.startsWith("--mode="))) {
+    throw new Error("Usage: node esbuild.config.mjs [--mode=single|individual] [--watch]");
+}
 
-// WebResource Project Directory Path
-const projectDir = "./src/templatepublisherprefix_templateprojectname";
+const sourceDir = "src/templatepublisherprefix_templateprojectname";
+const outputDir = "dist/templatepublisherprefix_templateprojectname";
+const entryPoints = globSync(`${sourceDir}/**/*.ts`, { ignore: "**/*.d.ts" }).sort();
 
-// Collect all JS files in the modules directory
-const entryPoints = glob.sync(`${projectDir}/out/**/*.js`).sort();
-
-// Generate _index.js that imports all modules and XrmQuery
-const indexPath = `${projectDir}/out/_index.js`;
-
-mkdirSync(path.dirname(indexPath), { recursive: true });
-
-let importLines = entryPoints
-    .map(f => `import "./${relative(dirname(indexPath), f).replace(/\\/g, "/")}";`)
-    .join("\n");
-
-writeFileSync(indexPath, importLines);
-
-// Build options for ESBuild
-// This will bundle into a single WebResourceBundle.js file
-const buildOptions = {
-    entryPoints: [indexPath],
-    bundle: true,
-    outfile: `${projectDir}/WebResourceBundle.js`,
-    sourcemap: true,
-    format: "cjs",
-    logLevel: "info",
-    banner: {
-        js: "var module = module || {};\n"
+// Exported handlers have the same WebResources.<folder>.<file> API in either mode.
+const entries = entryPoints.map(file => ({
+    file,
+    keys: path.relative(sourceDir, file).replace(/\\/g, "/").replace(/\.ts$/, "").split("/")
+}));
+// A file and folder with the same name cannot both occupy a handler namespace.
+for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+        const a = entries[i].keys;
+        const b = entries[j].keys;
+        if (a.every((key, index) => key === b[index]) || b.every((key, index) => key === a[index])) {
+            throw new Error(`Conflicting webresource namespaces: ${entries[i].file} and ${entries[j].file}`);
+        }
     }
+}
+
+// Never leave removed sources or the other mode's bundles deployable.
+if (!watchMode) rmSync("dist", { recursive: true, force: true });
+mkdirSync(outputDir, { recursive: true });
+
+if (entries.length === 0) {
+    console.info("No webresources to bundle yet.");
+    process.exit(0);
+}
+
+const common = {
+    bundle: true,
+    format: "iife",
+    sourcemap: true,
+    logLevel: "info"
 };
+const builds = mode === "single" ? [{
+    ...common,
+    // A virtual entry avoids generated sources and retains every module's exports.
+    stdin: {
+        contents: entries.map(({ file, keys }, index) =>
+            `import * as resource${index} from ${JSON.stringify(`./${file.replace(/\\/g, "/")}`)};`
+        ).join("\n") + "\n" + (() => {
+            const tree = Object.create(null);
+            entries.forEach(({ keys }, index) => {
+                let node = tree;
+                keys.slice(0, -1).forEach(key => node = node[key] ??= Object.create(null));
+                node[keys.at(-1)] = `resource${index}`;
+            });
+            const render = node => typeof node === "string" ? node :
+                `{${Object.entries(node).map(([key, value]) => `[${JSON.stringify(key)}]:${render(value)}`).join(",")}}`;
+            return `module.exports = ${render(tree)};`;
+        })(),
+        resolveDir: process.cwd(),
+        sourcefile: "webresources-entry.js"
+    },
+    globalName: "WebResources",
+    outfile: `${outputDir}/WebResources.js`
+}] : entries.map(({ file, keys }) => ({
+    ...common,
+    entryPoints: [file],
+    globalName: `WebResources${keys.map(key => `[${JSON.stringify(key)}]`).join("")}`,
+    outfile: `${outputDir}/${keys.join("/")}.js`
+}));
 
 if (watchMode) {
-    console.info("Starting ESBuild in watch mode");
-    const ctx = await esbuild.context(buildOptions);
-    await ctx.watch();
+    const contexts = await Promise.all(builds.map(options => esbuild.context(options)));
+    await Promise.all(contexts.map(context => context.watch()));
 } else {
-    console.info("Starting ESBuild for a single run");
-    await esbuild.build(buildOptions);
+    await Promise.all(builds.map(options => esbuild.build(options)));
 }

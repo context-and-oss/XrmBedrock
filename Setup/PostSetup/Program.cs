@@ -13,6 +13,7 @@ var projectRoot = FindProjectRoot();
 Directory.SetCurrentDirectory(projectRoot);
 
 var logPath = Path.Combine(projectRoot, "PostSetup.log");
+var logLock = new object();
 using var logWriter = new StreamWriter(logPath, append: false) { AutoFlush = true };
 
 Log($"Project root: {projectRoot}");
@@ -26,22 +27,24 @@ Step(2, "Restoring dotnet tools");
 RunCommand("dotnet", "tool restore");
 
 Step(3, "Installing npm packages for WebResources");
-RunCommand("npm", "install", Path.Combine("src", "Dataverse", "WebResources"));
+RunCommand("npm", "ci", Path.Combine("src", "Dataverse", "WebResources"));
 
-Step(4, "Generating Dataverse C# context (requires browser login)");
-Log("A browser window will open for OAuth authentication with your dev Dataverse environment.");
-Log("Complete the login in the browser to continue.");
-RunCommand("dotnet", "fsi src/Tools/Daxif/GenerateCSharpContext.fsx");
+if (!args.Contains("--skip-generation", StringComparer.Ordinal))
+{
+    Step(4, "Generating Dataverse C# context");
+    Log("Complete the browser or device-code login shown below if prompted.");
+    RunCommand("dotnet", "tool run xrmcontext");
 
-Step(5, "Generating Dataverse TypeScript context (requires browser login)");
-Log("A second browser window will open for OAuth authentication.");
-Log("Complete the login in the browser to continue.");
-RunCommand("dotnet", "fsi src/Tools/Daxif/GenerateTypeScriptContext.fsx");
+    Step(5, "Generating Dataverse TypeScript context");
+    RunCommand("dotnet", "tool run xdt");
 
-Step(6, "Initializing git repository and creating initial commit");
-RunCommand("git", "init");
-RunCommand("git", "add -A");
-RunCommand("git", "commit -m \"Initial project setup from XrmBedrock template\"");
+    Step(6, "Generating XrmMockup test metadata");
+    RunCommand("dotnet", "tool run xrmmockup-metadata");
+}
+
+Step(7, "Building generated solution");
+var solutionPath = Directory.GetFiles(projectRoot, "*.slnx").Concat(Directory.GetFiles(projectRoot, "*.sln")).Single();
+RunCommand("dotnet", $"build \"{solutionPath}\" --configuration Release");
 
 Log();
 Log("Setup complete.");
@@ -49,8 +52,11 @@ Log("Setup complete.");
 void Log(string message = "")
 {
     var line = message.Length > 0 ? $"[PostSetup] {message}" : string.Empty;
-    logWriter.WriteLine(line);
-    try { Console.WriteLine(line); } catch { /* ignore if stdout is broken */ }
+    lock (logLock)
+    {
+        logWriter.WriteLine(line);
+        Console.WriteLine(line);
+    }
 }
 
 void Step(int n, string description)
@@ -79,6 +85,7 @@ void GenerateSnk()
     // Template engine replaces 'templatecompanyname' with the company name.
     Log("Generating strong name key...");
     var snkPath = "templatecompanyname.snk";
+    if (File.Exists(snkPath)) { Log($"Keeping existing {snkPath}"); return; }
 
     using var rsa = RSA.Create(1024);
     var p = rsa.ExportParameters(true);
@@ -121,6 +128,7 @@ void GeneratePfx()
     // Template engine replaces 'templatecertpassword' with the cert password and 'xrmbedrock' with the project name.
     Log("Generating plugin signing certificate...");
     var pfxPath = "plugincert.pfx";
+    if (File.Exists(pfxPath)) { Log($"Keeping existing {pfxPath}"); return; }
     var certPassword = "templatecertpassword";
 
     using var rsaCert = RSA.Create(2048);
@@ -166,22 +174,21 @@ void RunCommand(string command, string arguments, string? workingDirectory = nul
         using var process = Process.Start(psi);
         if (process == null)
         {
-            Log($"Warning: Failed to start '{command}'. You may need to run it manually.");
-            return;
+            throw new InvalidOperationException($"Failed to start '{command}'.");
         }
 
         process.OutputDataReceived += (_, e) =>
         {
             if (e.Data != null)
             {
-                logWriter.WriteLine(e.Data);
+                Log(e.Data);
             }
         };
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data != null)
             {
-                logWriter.WriteLine(e.Data);
+                Log(e.Data);
             }
         };
         process.BeginOutputReadLine();
@@ -190,7 +197,7 @@ void RunCommand(string command, string arguments, string? workingDirectory = nul
 
         if (process.ExitCode != 0)
         {
-            Log($"Warning: '{command} {arguments}' exited with code {process.ExitCode}");
+            throw new InvalidOperationException($"'{command} {arguments}' exited with code {process.ExitCode}. See {logPath}.");
         }
         else
         {
@@ -200,6 +207,6 @@ void RunCommand(string command, string arguments, string? workingDirectory = nul
     catch (System.ComponentModel.Win32Exception ex)
     {
         Log($"Warning: Failed to run '{command} {arguments}': {ex.Message}");
-        Log("You may need to run it manually.");
+        throw;
     }
 }

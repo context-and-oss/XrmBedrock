@@ -1,0 +1,5 @@
+<Project>
+  <!-- This JavaScript project must not inherit the solution's .NET target framework,
+       C# compiler settings or NuGet analyzer references. The JavaScript SDK supplies
+       its own MSBuild defaults; TypeScript is checked by the npm build command. -->
+</Project>

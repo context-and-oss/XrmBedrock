@@ -10,15 +10,45 @@
   "author": "DG",
   "scripts": {
     "concurrently": "concurrently",
-    "clean": "git clean -fXd -e \\!node_modules -e \\!node_modules/**/* ./src/templatepublisherprefix_templateprojectname/out",
-    "clean-all": "git clean -fXd -e \\!node_modules -e \\!node_modules/**/* ./src/templatepublisherprefix_templateprojectname ./src/templatepublisherprefix_templateprojectname/out",
-    "build": "tsc",
-    "postbuild": "node esbuild.config.mjs"
+    "clean": "node -e \"require('fs').rmSync('dist', {recursive:true, force:true})\"",
+    "clean-all": "node -e \"require('fs').rmSync('dist', {recursive:true, force:true})\"",
+    "build": "node build.mjs",
+    "build:single": "npm run build -- --mode=single",
+    "build:individual": "npm run build -- --mode=individual",
+    "watch:single": "node build.mjs --mode=single --watch",
+    "watch:individual": "node build.mjs --mode=individual --watch",
+    "test": "node --test tests/*.test.mjs",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "typecheck": "tsc --noEmit",
+    "watch": "node build.mjs --watch"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "esbuild": "^0.25.5",
+    "esbuild": "^0.28.0",
     "glob": "^11.0.2",
-    "typescript": "^5.8.3"
-  }
+    "typescript": "^5.9.0",
+    "@types/xrm": "^9.0.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-check-file": "^3.3.2",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-no-unsanitized": "^4.1.5",
+    "eslint-plugin-promise": "^7.3.0",
+    "eslint-plugin-security": "^4.0.1",
+    "eslint-plugin-sonarjs": "^4.2.0",
+    "eslint-plugin-unicorn": "^61.0.2",
+    "globals": "^17.9.0",
+    "typescript-eslint": "^8.66.0",
+    "@html-eslint/eslint-plugin": "^0.64.0",
+    "@html-eslint/parser": "^0.64.0"
+  },
+  "dependencies": {
+    "@delegateas/xrmquery": "7.0.0-preview.3"
+  },
+  "config": {
+    "bundleMode": "single"
+  },
+  "type": "module"
 }

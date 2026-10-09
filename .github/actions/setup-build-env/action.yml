@@ -1,5 +1,10 @@
 name: 'Setup Build Environment'
 description: 'Sets up .NET, Node, signtool, and initializes setup files'
+inputs:
+  working-directory:
+    description: 'Solution directory to initialize with the checked-in sample data'
+    required: false
+    default: '.'
 runs:
   using: 'composite'
   steps:
@@ -8,10 +13,11 @@ runs:
       with:
         dotnet-version: 10.x
 
-    - name: Setup Node 18
+    - name: Setup Node.js 24 LTS
       uses: actions/setup-node@v4
       with:
-        node-version: 18
+        node-version: '24.x'
+        check-latest: true
 
     - name: Add signtool.exe to path for build
       shell: pwsh
@@ -27,11 +33,18 @@ runs:
         echo "PATH=$signtool;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         echo "Located signtool at: $signtool"
 
-    - name: Copy initial setup files (example branches)
+    - name: Initialize solution with sample data
       shell: pwsh
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        INITIAL_SETUP_PATH: ${{ github.workspace }}/Setup/InitialSetup
       run: |
-        if (Test-Path "Setup/InitialSetup") {
-          Copy-Item -Path "Setup/InitialSetup/WebResources" -Destination "src/Dataverse" -Recurse -Force
-          Copy-Item -Path "Setup/InitialSetup/SharedTest" -Destination "test" -Recurse -Force
-          Copy-Item -Path "Setup/InitialSetup/SharedContext" -Destination "src/Shared" -Recurse -Force
-        }
+        # Sample contexts and metadata are intentionally excluded from the template package.
+        # Copy them from the checkout to build offline without a Dataverse login.
+        Copy-Item -Path "$env:INITIAL_SETUP_PATH/SharedTest/MetadataGenerated" -Destination "test/Tests" -Recurse -Force
+        Copy-Item -Path "$env:INITIAL_SETUP_PATH/SharedContext" -Destination "src/Shared" -Recurse -Force
+
+        New-Item -ItemType Directory -Force "src/Dataverse/WebResources/typings" | Out-Null
+        Copy-Item -Path "$env:INITIAL_SETUP_PATH/WebResourceTypings" -Destination "src/Dataverse/WebResources/typings/XRM" -Recurse -Force
+        dotnet run --project Setup/PostSetup -- --skip-generation
+        if ($LASTEXITCODE -ne 0) { throw 'Offline template setup failed' }

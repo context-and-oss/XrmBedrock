@@ -1,4 +1,6 @@
 steps:
+  - template: setup-node.yaml
+
   - task: DotNetCoreCLI@2
     displayName: 'dotnet restore'
     inputs:
@@ -16,11 +18,7 @@ steps:
       targetType: 'inline'
       script: Write-Host "##vso[task.setvariable variable=PATH;]${env:PATH};`"C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool`";`"C:\Program Files\Microsoft SDKs\ClickOnce\SignTool`"";
 
-  - script: '"$(FsiPath)" "$(DaxifPath)/GenerateCSharpContext.fsx" $(AuthParams)'
-    displayName: 'Update C# context'
-
-  - script: '"$(FsiPath)" "$(DaxifPath)/GenerateTypeScriptContext.fsx" $(AuthParams)'
-    displayName: 'Update TS context'
+  - template: dataverse/generate.yaml
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet build'

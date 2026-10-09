@@ -3,17 +3,9 @@ using Microsoft.Xrm.Sdk;
 
 namespace DataverseRegistration;
 
-public class DataverseLogger : ILogger
+public class DataverseLogger(ITracingService service) : ILogger
 {
-    private readonly ITracingService service;
-
-    public DataverseLogger(ITracingService service)
-    {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
-
-        this.service = service;
-    }
+    private readonly ITracingService service = service ?? throw new ArgumentNullException(nameof(service));
 
     public IDisposable? BeginScope<TState>(TState state)
         where TState : notnull => default!;
@@ -39,18 +31,10 @@ public class DataverseLogger : ILogger
 }
 
 #pragma warning disable SA1402 // File may only contain a single type
-public class DataverseLogger<T> : ILogger<T>
+public class DataverseLogger<T>(ITracingService service) : ILogger<T>
 #pragma warning restore SA1402 // File may only contain a single type
 {
-    private readonly ITracingService service;
-
-    public DataverseLogger(ITracingService service)
-    {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
-
-        this.service = service;
-    }
+    private readonly ITracingService service = service ?? throw new ArgumentNullException(nameof(service));
 
     public IDisposable? BeginScope<TState>(TState state)
         where TState : notnull => default!;

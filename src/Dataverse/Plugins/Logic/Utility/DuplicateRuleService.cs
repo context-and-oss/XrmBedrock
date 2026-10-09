@@ -6,18 +6,10 @@ using XrmBedrock.SharedContext;
 
 namespace DataverseLogic.Utility;
 
-public class DuplicateRuleService
+public class DuplicateRuleService(ILogger logger, IAdminDataverseAccessObjectService adminDao)
 {
-    private readonly ILogger logger;
-    private readonly IAdminDataverseAccessObjectService adminDao;
-
-    public DuplicateRuleService(
-        ILogger logger,
-        IAdminDataverseAccessObjectService adminDao)
-    {
-        this.logger = logger;
-        this.adminDao = adminDao;
-    }
+    private readonly ILogger logger = logger;
+    private readonly IAdminDataverseAccessObjectService adminDao = adminDao;
 
     public void AutopublishRules()
     {
@@ -35,7 +27,7 @@ public class DuplicateRuleService
     private List<DuplicateRule> GetUnpublishedDuplicateRulesForAutoPublish()
     {
         var unpublisedRules = adminDao.RetrieveList(xrm => xrm.DuplicateRuleSet
-            .Where(r => r.StateCode == DuplicateRuleState.Inactive)
+            .Where(r => r.StateCode == duplicaterule_statecode.Inactive)
             .Select(r => new DuplicateRule
             {
                 Id = r.Id,

@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set template validation paths
+        shell: pwsh
+        run: |
+          "TEMPLATE_OUTPUT=$(Join-Path $env:RUNNER_TEMP 'template-validation')" >> $env:GITHUB_ENV
+          "TEMPLATE_PACKAGES=$(Join-Path $env:RUNNER_TEMP 'template-packages')" >> $env:GITHUB_ENV
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.x
+
+      - name: Pack template in Release
+        shell: pwsh
+        run: dotnet pack XrmBedrock.Template.csproj --configuration Release --output "$env:TEMPLATE_PACKAGES"
+
+      - name: Install packed template
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem "$env:TEMPLATE_PACKAGES/XrmBedrock.*.nupkg")
+          if ($packages.Count -ne 1) { throw 'Expected exactly one packed template' }
+          $package = $packages[0]
+          dotnet new install $package.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Template installation failed' }
+
+      - name: Create solution from packed template
+        shell: pwsh
+        run: |
+          # Do not run the interactive Dataverse post-action; use offline sample data below.
+          dotnet new xrmbedrock --name TemplateValidation --company-name ValidationCompany --publisher-prefix val --solution ValidationSolution --output "$env:TEMPLATE_OUTPUT" --allow-scripts no --no-update-check
+          # 105 means creation succeeded but a post-action failed (the script is intentionally denied).
+          $creationExitCode = $LASTEXITCODE
+          if ($creationExitCode -notin @(0, 105)) {
+            throw "Template creation failed with exit code $creationExitCode"
+          }
+          if (-not (Test-Path "$env:TEMPLATE_OUTPUT/ValidationCompany.slnx")) {
+            throw 'The generated solution was not renamed correctly'
+          }
+          if (-not (Test-Path "$env:TEMPLATE_OUTPUT/test/Tests/DataProducer/DataProducer_SampleArea.cs")) {
+            throw 'The packed template is missing the sample data producer'
+          }
+          # GitHub's pwsh wrapper propagates LASTEXITCODE, so clear the accepted post-action status.
+          $global:LASTEXITCODE = 0
+
+      - name: Set up generated solution with sample data
+        uses: ./.github/actions/setup-build-env
+        with:
+          working-directory: ${{ env.TEMPLATE_OUTPUT }}
+
+      - name: Build generated solution in Release
+        working-directory: ${{ env.TEMPLATE_OUTPUT }}
+        run: dotnet build ValidationCompany.slnx --no-restore --configuration Release

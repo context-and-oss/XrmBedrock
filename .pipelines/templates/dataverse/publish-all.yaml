@@ -1,13 +1,35 @@
-# Export solution
+parameters:
+  - name: workingDirectory
+    type: string
+    default: $(Build.SourcesDirectory)
+  - name: environment
+    type: string
+    default: Dev
+steps:
+  - task: AzureCLI@2
+    displayName: Publish Dataverse customizations with PAC
+    inputs:
+      azureSubscription: ${{ upper(parameters.environment) }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      workingDirectory: ${{ parameters.workingDirectory }}
+      inlineScript: |
+        $ErrorActionPreference = 'Stop'
+        $environmentUrl = $env:DataverseUrl
+        $organizationUri = $null
+        if (-not [Uri]::TryCreate($environmentUrl, [UriKind]::Absolute, [ref] $organizationUri) -or $organizationUri.Scheme -ne 'https') {
+            throw 'DataverseUrl must be an explicit HTTPS Dataverse organization URL.'
+        }
 
-  steps:
-  - script: '"$(FsiPath)" "$(DaxifPath)/PublishAllArg.fsx" env=Dev $(AuthParams)'
-    displayName: 'Publish all - timeout allowed'
-    timeoutInMinutes: 10
-    continueOnError: true
+        function Invoke-Tool {
+            param([string] $Tool, [string[]] $ToolArguments)
+            & dotnet tool run $Tool @ToolArguments
+            if ($LASTEXITCODE -ne 0) { throw "$Tool command failed (exit code $LASTEXITCODE)." }
+        }
 
-  - script: '"$(FsiPath)" "$(DaxifPath)/PublishAllArg.fsx" env=Dev $(AuthParams)'
-    displayName: 'Publish all'
-    timeoutInMinutes: 10
-    condition: eq(variables['Agent.JobStatus'], 'SucceededWithIssues')
-  
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed.' }
+        Invoke-Tool pac @('auth', 'create', '--environment', $environmentUrl, '--managedIdentity')
+        Invoke-Tool pac @('solution', 'publish', '--environment', $environmentUrl)
+    env:
+      DataverseUrl: $(DataverseUrl)

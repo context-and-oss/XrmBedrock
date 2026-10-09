@@ -2,16 +2,15 @@
   <Folder Name="/Solution Items/">
     <File Path="README.md" />
   </Folder>
-  <Folder Name="/src/">
-    <Project Path="src/Tools/Tools.csproj" />
-  </Folder>
   <Folder Name="/src/Azure/">
     <Project Path="src/Azure/DataverseService/DataverseService.csproj" />
   </Folder>
   <Folder Name="/src/Dataverse/">
     <Project Path="src/Dataverse/ConsoleJobs/ConsoleJobs.csproj" />
     <Project Path="src/Dataverse/Plugins/Plugins.csproj" />
-    <Project Path="src/Dataverse/WebResources/WebResources.csproj" />
+    <Project Path="src/Dataverse/WebResources/WebResources.esproj">
+      <Build Project="true" />
+    </Project>
   </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/SharedContext/SharedContext.csproj" />

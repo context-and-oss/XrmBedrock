@@ -3,17 +3,28 @@ using XrmBedrock.SharedContext;
 namespace Tests;
 
 /// <summary>
-/// This is a SAMPLE file and you should remove it as soon as you have made your first real ProduceValidXXX method in a file like this representing one of the areas of your solution.
-/// We generally try to avoid these sample files and folders in the solution and refer to the example brances in the repo but solution will not build without at least one reference to dao, so an exception is made in this case.
-///
-/// The use of partial classes allows us to split the DataProducer into multiple files, each representing a different area of the solution. This is important as the DataProducer can become quite large and unwieldy if all methods are in a single file.
+/// This sample shows how to add ProduceValidXXX methods for an area of your solution.
+/// Use partial classes to keep each area's producers in a separate file, and adapt this example when adding your own producers.
 /// </summary>
 public partial class DataProducer
 {
+    /// <summary>
+    /// Creates and saves a contact, supplying defaults only for values that have not been provided.
+    /// Pass null to create a contact with defaults, or pass a contact with the values required by your test.
+    /// Uses dao so the contact is created in the requested user context; use elevatedDao for related records that require admin permissions.
+    /// </summary>
+    /// <param name="contact">The contact values to preserve, or null to create a contact with defaults.</param>
+    /// <returns>The saved contact with its assigned ID and any missing default values populated.</returns>
+    /// <example>
+    /// <code>
+    /// var contact = Producer.SampleProduceValidContact(null);
+    /// var customContact = Producer.SampleProduceValidContact(new Contact { FirstName = "Jane" });
+    /// </code>
+    /// </example>
     internal Contact SampleProduceValidContact(Contact? contact) =>
         dao.Producer(contact, e =>
         {
-            e.EnsureValue(x => x.FirstName, $"John");
-            e.EnsureValue(x => x.LastName, $"Doe");
+            e.EnsureValue(x => x.FirstName, "John");
+            e.EnsureValue(x => x.LastName, "Doe");
         });
 }

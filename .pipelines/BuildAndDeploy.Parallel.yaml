@@ -5,7 +5,7 @@
 # deploy phase is identical to BuildAndDeploy.yaml and reuses the same deploy templates.
 #
 # The top-level pool stays windows-latest: the deploy jobs inherit it and the Dataverse deploy
-# runs F# scripts via $(FsiPath), which only exists on the Windows image.
+# uses Windows for optional Authenticode signing of the plugin assembly.
 trigger: none
 schedules:
   - cron: "30 09 * * *"
@@ -165,7 +165,6 @@ stages:
     parameters:
       environment: Test
       dataverseEnv: Test
-      powerPlatformSPN: "Dataverse Test"
       dependsOn: Deploy_Development
       params: ${{parameters}}
 
@@ -173,7 +172,6 @@ stages:
     parameters:
       environment: UAT
       dataverseEnv: UAT
-      powerPlatformSPN: "Dataverse UAT"
       dependsOn: Deploy_Test
       params: ${{parameters}}
 
@@ -181,6 +179,5 @@ stages:
     parameters:
       environment: Prod
       dataverseEnv: Prod
-      powerPlatformSPN: "Dataverse Prod"
       dependsOn: Deploy_UAT
       params: ${{parameters}}

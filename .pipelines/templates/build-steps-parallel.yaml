@@ -15,6 +15,8 @@ parameters:
     default: true
 
 steps:
+  - template: setup-node.yaml
+
   - task: Cache@2
     displayName: 'Cache NuGet packages'
     inputs:
@@ -45,11 +47,7 @@ steps:
       targetType: 'inline'
       script: Write-Host "##vso[task.setvariable variable=PATH;]${env:PATH};`"C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool`";`"C:\Program Files\Microsoft SDKs\ClickOnce\SignTool`"";
 
-  - script: '"$(FsiPath)" "$(DaxifPath)/GenerateCSharpContext.fsx" $(AuthParams)'
-    displayName: 'Update C# context'
-
-  - script: '"$(FsiPath)" "$(DaxifPath)/GenerateTypeScriptContext.fsx" $(AuthParams)'
-    displayName: 'Update TS context'
+  - template: dataverse/generate.yaml
 
   - ${{ if eq(parameters.runAnalyzers, true) }}:
       - task: DotNetCoreCLI@2
@@ -68,9 +66,6 @@ steps:
           arguments: --no-restore --configuration $(BuildConfiguration) -p:PackAndSignPlugin=true -m /p:UseSharedCompilation=true /p:BuildInParallel=true /p:RunAnalyzersDuringBuild=false /p:EnforceCodeStyleInBuild=false /p:TreatWarningsAsErrors=false /p:GenerateDocumentationFile=false
 
   - ${{ if eq(parameters.publishArtifact, true) }}:
-      - script: '"$(FsiPath)" "$(DaxifPath)/GenerateTestMetadata.fsx" $(AuthParams)'
-        displayName: 'Update Test Metadata'
-
       - task: PublishPipelineArtifact@1
         displayName: 'Publish build output'
         inputs:
