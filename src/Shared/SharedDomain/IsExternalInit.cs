@@ -1,4 +1,4 @@
-#if NET462
+#if NET48
 namespace System.Runtime.CompilerServices;
 
 #pragma warning disable S2094

@@ -1,7 +1,7 @@
 /*=============================================================================
 **
 ** Purpose: Exception class for null arguments to a method.
-** .NetFramework 4.6.2 ArgumentNullException does not implement the ThrowIfNull method.
+** .NET Framework 4.8 ArgumentNullException does not implement the ThrowIfNull method.
 **
 =============================================================================*/
 

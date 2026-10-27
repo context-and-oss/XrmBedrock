@@ -1,6 +1,6 @@
 variables:
   SolutionFile: '$(Build.SourcesDirectory)/templatecompanyname.slnx'
   SolutionName: templatesolutionname
-  PluginAssembly: 'src/Dataverse/Plugins/bin/Release/net462/Merged.templatecompanyname.templateprojectname.Dataverse.Plugins.dll'
+  PluginAssembly: 'src/Dataverse/Plugins/bin/Release/net48/Merged.templatecompanyname.templateprojectname.Dataverse.Plugins.dll'
   BuildPlatform: 'any cpu'
   BuildConfiguration: Release

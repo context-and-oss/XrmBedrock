@@ -1,6 +1,6 @@
 using Microsoft.Xrm.Sdk;
 #pragma warning disable IDE0005
-#if NET462
+#if NET48
 using System.Net.Http;
 #endif
 #pragma warning restore IDE0005

@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<AssemblyName>templatecompanyname.templateprojectname.Dataverse.Plugins</AssemblyName>
 		<TargetFramework></TargetFramework>
-		<TargetFrameworks>net462;net10.0</TargetFrameworks>
+		<TargetFrameworks>net48;net10.0</TargetFrameworks>
 		<SignAssembly>False</SignAssembly>
 		<AssemblyOriginatorKeyFile>..\..\..\templatecompanyname.snk</AssemblyOriginatorKeyFile>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -21,7 +21,7 @@
 		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.13" />
 	</ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.59" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Runtime.Caching" />
@@ -47,7 +47,7 @@
 	</ItemGroup>
 	
 
-	<Target Name="SignDLL" AfterTargets="MergePluginAssembly" Condition="'$(TargetFramework)' == 'net462' and '$(PackAndSignPlugin)' == 'true' and '$(OS)' == 'Windows_NT'">
+	<Target Name="SignDLL" AfterTargets="MergePluginAssembly" Condition="'$(TargetFramework)' == 'net48' and '$(PackAndSignPlugin)' == 'true' and '$(OS)' == 'Windows_NT'">
 	  <Exec Command="signtool sign /p templatecertpassword /f ..\..\..\plugincert.pfx /tr http://timestamp.digicert.com /fd SHA256 /td SHA256 &quot;$(TargetDir)Merged.$(TargetFileName)&quot;" />
 	</Target>
 	<ItemGroup>
