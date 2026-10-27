@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.6887863">
+﻿<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.6887863">
   <PropertyGroup>
     <!-- Use the lockfile and retain the same install behavior in VS and dotnet builds. -->
     <ShouldRunNpmInstall>false</ShouldRunNpmInstall>
