@@ -6,7 +6,7 @@ steps:
       Contents: |
         .config/dotnet-tools.json
         appsettings.json
-        src/Dataverse/Plugins/bin/Release/net462/**
+        src/Dataverse/Plugins/bin/Release/net48/**
         src/Dataverse/WebResources/dist/**
       TargetFolder: '$(Build.ArtifactStagingDirectory)/Dataverse'
   - publish: '$(Build.ArtifactStagingDirectory)/Dataverse'

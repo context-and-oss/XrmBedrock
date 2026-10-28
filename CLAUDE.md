@@ -50,7 +50,7 @@ This is a mono repository with multiple connected systems. All these systems use
   - [Dataverse](src/Dataverse): Contains the code running in Dataverse.
     - [SharedPluginLogic](src/Dataverse/SharedPluginLogic): A shared code project. Provides plugin code for the synchronous business logic.
     - [WebResources](src/Dataverse/WebResources): Form-event scripts and self-contained HTML pages (`src/html/`) with DataverseHtml linting.
-    - [Plugins](src/Dataverse/Plugins): Read only! A .NET 4.6.2 class library. The output of this project will be deployed to Dataverse. Uses the output of SharedPluginLogic.
+    - [Plugins](src/Dataverse/Plugins): Read only! A .NET 4.8 class library. The output of this project will be deployed to Dataverse. Uses the output of SharedPluginLogic.
     - [PluginsNetCore](src/Dataverse/PluginsNetCore): Read only! A modern .NET class library. The output of this project will be used in tests. Uses the output of SharedPluginLogic. No files should be added to this project directly.
   - [Shared](src/Shared): Contains code that is shared between Azure and Dataverse business logic.
     - [SharedDomain](src/Shared/SharedDomain): A shared code project. Contains any backend domain classes used to communicate between Azure and Dataverse. This project should only contain domain classes used for this purpose. Domain classes that are used exclusively in either Azure or Dataverse should be defined there instead of this shared place.

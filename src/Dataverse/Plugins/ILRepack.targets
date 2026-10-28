@@ -1,6 +1,6 @@
 <Project>
 	<!-- Merge dependencies for single-assembly plugin deployment through XrmSync. -->
-	<Target Name="MergePluginAssembly" AfterTargets="Build" Condition="'$(TargetFramework)' == 'net462'">
+	<Target Name="MergePluginAssembly" AfterTargets="Build" Condition="'$(TargetFramework)' == 'net48'">
 		<ItemGroup>
 			<InputAssemblies Include="$(TargetPath)" />
 			<InputAssemblies Include="$(TargetDir)Microsoft.Bcl.AsyncInterfaces.dll" />

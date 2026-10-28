@@ -317,15 +317,15 @@ The Azure DevOps pipelines live in `.pipelines/`. Entry-point pipelines sit at t
 * If you want to deploy plugins from your machine (circumventing the pipeline) you may face these issues
   * You will need the path to signtool in your PATH environment variable on your machine. It comes with the MS SDKs. Search for signtool.exe on your machine
   * Avoid spaces in the path to the plugin project (yes, the entire path)
-  * Some users have experienced that VS does not build the plugin project in net462 even though the project file specifies a build to both net10.0 and net462. You can force a build of the project to net 462 using this switch: --framework net462
-* There has been reported incidents of the pipeline not building the plugin in net462 in case you experience that add this step to `\.pipelines\templates\build-steps.yaml`:
+  * Some users have experienced that VS does not build the plugin project in net48 even though the project file specifies a build to both net10.0 and net48. You can force a build of the project to net48 using this switch: --framework net48
+* There has been reported incidents of the pipeline not building the plugin in net48 in case you experience that add this step to `\.pipelines\templates\build-steps.yaml`:
 ```yaml
 - task: DotNetCoreCLI@2
-    displayName: 'dotnet build plugins only (forcing .NetFramework 4.6.2)'
+    displayName: 'dotnet build plugins only (forcing .NET Framework 4.8)'
     inputs:
       command: build
       projects: '$(BasePath)/src/Dataverse/Plugins/Plugins.csproj'
-      arguments: --no-restore --configuration $(BuildConfiguration) -p:PackAndSignPlugin=true --framework net462
+      arguments: --no-restore --configuration $(BuildConfiguration) -p:PackAndSignPlugin=true --framework net48
 ```
 
 ## TODO

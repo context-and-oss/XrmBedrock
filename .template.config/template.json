@@ -139,7 +139,7 @@
       },
       "replaces": "templateprojectname"
     },
-    "NET462": {
+    "NET48": {
       "type": "generated",
       "generator": "constant",
       "parameters": {
