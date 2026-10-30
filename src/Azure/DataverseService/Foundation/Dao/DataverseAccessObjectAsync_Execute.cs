@@ -18,10 +18,10 @@ public partial class DataverseAccessObjectAsync
     /// Generic Async method that executes an OrganisationRequest in XRM
     /// </summary>
     /// <param name="request"></param>
-    /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<OrganizationResponse> ExecuteAsync(OrganizationRequest request, [CallerMemberName] string methodName = "")
+    public Task<OrganizationResponse> ExecuteAsync(OrganizationRequest request, [CallerMemberName] string callerMethodName = "")
     {
-        return DataverseWrapAccessAsync.GenericExecuteInXrmAsync(logger, () => CancellationTokenIsSet() ? orgServiceAsync.ExecuteAsync(request, cancellationToken) : orgServiceAsync.ExecuteAsync(request), methodName);
+        return DataverseWrapAccessAsync.GenericExecuteInXrmAsync(logger, nameof(ExecuteAsync), callerMethodName, () => CancellationTokenIsSet() ? orgServiceAsync.ExecuteAsync(request, cancellationToken) : orgServiceAsync.ExecuteAsync(request));
     }
 }

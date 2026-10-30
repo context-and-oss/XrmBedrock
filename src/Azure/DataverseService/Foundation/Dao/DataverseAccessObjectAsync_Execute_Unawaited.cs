@@ -19,11 +19,11 @@ public partial class DataverseAccessObjectAsync
     /// NOTE! This is an UnawaitedAsync method so caller is responsible for all exception handling. Please keep it uniform!
     /// </summary>
     /// <param name="request"></param>
-    /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<OrganizationResponse> ExecuteUnawaitedAsync(OrganizationRequest request, [CallerMemberName] string methodName = "")
+    public Task<OrganizationResponse> ExecuteUnawaitedAsync(OrganizationRequest request, [CallerMemberName] string callerMethodName = "")
     {
         var executeMethod = () => CancellationTokenIsSet() ? orgServiceAsync.ExecuteAsync(request, cancellationToken) : orgServiceAsync.ExecuteAsync(request);
-        return DataverseWrapAccessAsync.GenericExecuteInXrmUnawaitedAsync(logger, executeMethod, methodName);
+        return DataverseWrapAccessAsync.GenericExecuteInXrmUnawaitedAsync(logger, nameof(ExecuteUnawaitedAsync), callerMethodName, executeMethod);
     }
 }

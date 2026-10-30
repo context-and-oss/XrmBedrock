@@ -19,12 +19,12 @@ public partial class DataverseAccessObjectAsync
     /// </summary>
     /// <typeparam name="T0"></typeparam>
     /// <param name="entityGuid"></param>
-    /// <param name="methodName"></param>
-    public Task DeleteUnawaitedAsync<T0>(Guid entityGuid, [CallerMemberName] string methodName = "")
+    /// <param name="callerMethodName"></param>
+    public Task DeleteUnawaitedAsync<T0>(Guid entityGuid, [CallerMemberName] string callerMethodName = "")
         where T0 : Entity
     {
         var entityName = typeof(T0).Name.ToLowerInvariant();
         var deleteOperation = () => CancellationTokenIsSet() ? orgServiceAsync.DeleteAsync(entityName, entityGuid, cancellationToken) : orgServiceAsync.DeleteAsync(entityName, entityGuid);
-        return DataverseWrapAccessAsync.GenericDeleteInXrmUnawaitedAsync(logger, entityGuid, typeof(T0).Name, deleteOperation, methodName);
+        return DataverseWrapAccessAsync.GenericDeleteInXrmUnawaitedAsync(logger, nameof(DeleteUnawaitedAsync), callerMethodName, entityGuid, typeof(T0).Name, deleteOperation);
     }
 }

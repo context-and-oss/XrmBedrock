@@ -3,7 +3,7 @@ using System.Runtime.Caching;
 
 namespace SharedContext.Dao;
 
-internal class CacheHandler(MemoryCache cache, ILogger logger)
+public class CacheHandler(MemoryCache cache, ILogger logger)
 {
     public const int _cacheExpirationTimeInMinutes = 60;
     private readonly MemoryCache _cache = cache;
@@ -17,6 +17,23 @@ internal class CacheHandler(MemoryCache cache, ILogger logger)
             // Stop logging as soon as confidence in the caching mekanism is established among the team
             logger.LogTrace($"Cache miss on '{key}'");
             value = factory.Invoke();
+            if (value != null)
+                _cache.Add(key, value, DateTime.Now.AddMinutes(_cacheExpirationTimeInMinutes));
+        }
+        else
+            // Stop logging as soon as confidence in the caching mekanism is established among the team
+            logger.LogTrace($"Cache hit on '{key}'");
+        return value;
+    }
+
+    public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory)
+    {
+        T value = GetCachedValue<T>(key);
+        if (value == null)
+        {
+            // Stop logging as soon as confidence in the caching mekanism is established among the team
+            logger.LogTrace($"Cache miss on '{key}'");
+            value = await factory.Invoke();
             if (value != null)
                 _cache.Add(key, value, DateTime.Now.AddMinutes(_cacheExpirationTimeInMinutes));
         }
