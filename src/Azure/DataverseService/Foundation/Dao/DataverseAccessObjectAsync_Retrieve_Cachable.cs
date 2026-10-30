@@ -1,5 +1,6 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using XrmBedrock.SharedContext;
 using Task = System.Threading.Tasks.Task;
@@ -16,50 +17,10 @@ public partial class DataverseAccessObjectAsync
     /// <typeparam name="T"></typeparam>
     /// <param name="cacheKey"></param>
     /// <param name="guidOfElement"></param>
-    /// <param name="selector"></param>
-    /// <param name="callerMethodName"></param>
+    /// <param name="columnExpressions"></param>
     /// <returns></returns>
-    public Task<T> RetrieveCachableAsync<T>(string cacheKey, Guid guidOfElement, Func<T, T> selector, [CallerMemberName] string callerMethodName = "")
-        where T : Entity => Task.Run(() => RetrieveCachable<T>(cacheKey, guidOfElement, selector, callerMethodName));
-
-    /// <summary>
-    /// Same as RetrieveAsync<typeparamref name="T0"/>,<typeparamref name="T1"/> but allows the use of caching of the retrieved object by the specified cacheKey
-    /// </summary>
-    /// <typeparam name="T0"></typeparam>
-    /// <typeparam name="T1"></typeparam>
-    /// <param name="cacheKey"></param>
-    /// <param name="guidOfElement"></param>
-    /// <param name="selector"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T1> RetrieveCachableAsync<T0, T1>(string cacheKey, Guid guidOfElement, Func<T0, T1> selector, [CallerMemberName] string callerMethodName = "")
-        where T0 : Entity
-        where T1 : class => Task.Run(() => RetrieveCachable<T0, T1>(cacheKey, guidOfElement, selector, callerMethodName));
-
-    /// <summary>
-    /// Same as RetrieveAsync<typeparamref name="T0"/>,<typeparamref name="T1"/> but allows the use of caching of the retrieved object by the specified cacheKey
-    /// </summary>
-    /// <typeparam name="T0"></typeparam>
-    /// <typeparam name="T1"></typeparam>
-    /// <param name="cacheKey"></param>
-    /// <param name="guidOfElement"></param>
-    /// <param name="selector"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T1?> RetrieveCachableAsync<T0, T1>(string cacheKey, Guid guidOfElement, Func<T0, T1?> selector, [CallerMemberName] string callerMethodName = "")
-        where T0 : Entity
-        where T1 : struct => Task.Run(() => RetrieveCachable<T0, T1>(cacheKey, guidOfElement, selector, callerMethodName));
-
-    /// <summary>
-    /// Same as RetrieveListAsync<typeparamref name="T"/> but allows the use of caching of the retrieved list of objects by the specified cacheKey
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="cacheKey"></param>
-    /// <param name="del"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<List<T>> RetrieveListCachableAsync<T>(string cacheKey, Func<Xrm, IEnumerable<T>> del, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveListCachable<T>(cacheKey, del, callerMethodName));
+    public Task<T> RetrieveCachableAsync<T>(string cacheKey, Guid guidOfElement, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity => cacheHandler.GetOrCreateAsync<T>(cacheKey, () => RetrieveAsync<T>(guidOfElement, columnExpressions));
 
     /// <summary>
     /// Same as RetrieveListAsync<typeparamref name="T"/> but allows the use of caching of the retrieved list of objects by the specified cacheKey
@@ -70,49 +31,17 @@ public partial class DataverseAccessObjectAsync
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
     public Task<List<T>> RetrieveListCachableAsync<T>(string cacheKey, QueryExpression query, [CallerMemberName] string callerMethodName = "")
-        where T : Entity => Task.Run(() => RetrieveListCachable<T>(cacheKey, query, callerMethodName));
+        where T : Entity => cacheHandler.GetOrCreateAsync<List<T>>(cacheKey, () => RetrieveListAsync<T>(query, callerMethodName));
 
     /// <summary>
-    /// Same as RetrieveSingleAsync<typeparamref name="T"/> but allows the use of caching of the retrieved object by the specified cacheKey
+    /// Same as RetrieveMultipleAsync but allows the use of caching of the retrieved list of objects by the specified cacheKey
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     /// <param name="cacheKey"></param>
-    /// <param name="delegateQueryFunction"></param>
+    /// <param name="query"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<T> RetrieveSingleCachableAsync<T>(string cacheKey, Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveSingleCachable<T>(cacheKey, delegateQueryFunction, callerMethodName));
+    public Task<List<Entity>> RetrieveMultipleCachableAsync(string cacheKey, QueryExpression query, [CallerMemberName] string callerMethodName = "")
+        => cacheHandler.GetOrCreateAsync<List<Entity>>(cacheKey, () => RetrieveMultipleAsync(query, callerMethodName));
 
-    /// <summary>
-    /// Same as RetrieveSingleOrDefaultAsync<typeparamref name="T"/> but allows the use of caching of the retrieved object by the specified cacheKey
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="cacheKey"></param>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T?> RetrieveSingleOrDefaultCachableAsync<T>(string cacheKey, Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveSingleOrDefaultCachable<T>(cacheKey, delegateQueryFunction, callerMethodName));
-
-    /// <summary>
-    /// Same as RetrieveFirstAsync<typeparamref name="T"/> but allows the use of caching of the retrieved object by the specified cacheKey
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="cacheKey"></param>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T> RetrieveFirstCachableAsync<T>(string cacheKey, Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveFirstCachable<T>(cacheKey, delegateQueryFunction, callerMethodName));
-
-    /// <summary>
-    /// Same as RetrieveFirstOrDefaultAsync<typeparamref name="T"/> but allows the use of caching of the retrieved object by the specified cacheKey
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="cacheKey"></param>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T?> RetrieveFirstOrDefaultCachableAsync<T>(string cacheKey, Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveFirstOrDefaultCachable<T>(cacheKey, delegateQueryFunction, callerMethodName));
+    
 }

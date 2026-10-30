@@ -18,7 +18,8 @@ namespace Azure.DataverseService.Foundation.Dao;
 /// In UnawaitedAsync methods we do not await, so we will not be able to catch exceptions etc, so code using these will have to account for that. The gain of using these is the option to start Tasks in parallel.
 ///
 /// This class is implemented as partial to split an otherwise large file into smaller files.
-/// </summary>
+///
+/// The CancellationToken set on the DataverseAccessObjectAsync with SetCancellationTokenis used with all calls to the IOrganizationServiceAsync2
 public partial class DataverseAccessObjectAsync(IOrganizationServiceAsync2 orgServiceAsync, ILogger logger)
     : DataverseAccessObject(orgServiceAsync, logger), IDataverseAccessObjectAsync
 {

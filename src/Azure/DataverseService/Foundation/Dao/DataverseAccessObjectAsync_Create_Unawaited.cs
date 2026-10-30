@@ -20,11 +20,11 @@ public partial class DataverseAccessObjectAsync
     /// </summary>
     /// <typeparam name="T0"></typeparam>
     /// <param name="entity"></param>
-    /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<Guid> CreateUnawaitedAsync<T0>(T0 entity, [CallerMemberName] string methodName = "")
+    public Task<Guid> CreateUnawaitedAsync<T0>(T0 entity, [CallerMemberName] string callerMethodName = "")
         where T0 : Entity
     {
-        return DataverseWrapAccessAsync.GenericCreateInXrmUnawaitedAsync(logger, entity, () => CancellationTokenIsSet() ? orgServiceAsync.CreateAsync(entity, cancellationToken) : orgServiceAsync.CreateAsync(entity), methodName);
+        return DataverseWrapAccessAsync.GenericCreateInXrmUnawaitedAsync(logger, nameof(CreateUnawaitedAsync), callerMethodName, entity, () => CancellationTokenIsSet() ? orgServiceAsync.CreateAsync(entity, cancellationToken) : orgServiceAsync.CreateAsync(entity));
     }
 }
