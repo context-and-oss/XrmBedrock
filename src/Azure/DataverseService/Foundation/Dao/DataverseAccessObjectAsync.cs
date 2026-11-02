@@ -20,6 +20,7 @@ namespace Azure.DataverseService.Foundation.Dao;
 /// This class is implemented as partial to split an otherwise large file into smaller files.
 ///
 /// The CancellationToken set on the DataverseAccessObjectAsync with SetCancellationTokenis used with all calls to the IOrganizationServiceAsync2
+/// </summary>
 public partial class DataverseAccessObjectAsync(IOrganizationServiceAsync2 orgServiceAsync, ILogger logger)
     : DataverseAccessObject(orgServiceAsync, logger), IDataverseAccessObjectAsync
 {
