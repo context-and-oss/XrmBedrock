@@ -15,9 +15,10 @@ public partial class DataverseAccessObjectAsync
     /// <param name="entity"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<Guid> CreateAsync<T0>(T0 entity, [CallerMemberName] string callerMethodName = "")
+    public Task<Guid> CreateAsync<T0>(T0 entity, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
+
         where T0 : Entity
     {
-        return DataverseWrapAccessAsync.GenericCreateInXrmAsync(logger, nameof(CreateAsync), callerMethodName, entity, () => CancellationTokenIsSet() ? orgServiceAsync.CreateAsync(entity, cancellationToken) : orgServiceAsync.CreateAsync(entity));
+        return DataverseWrapAccessAsync.GenericCreateInXrmAsync(logger, nameof(CreateAsync), callerMethodName, entity, () => orgServiceAsync.CreateAsync(entity, ct == default ? cancellationToken : ct));
     }
 }

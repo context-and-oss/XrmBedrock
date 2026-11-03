@@ -20,9 +20,9 @@ public partial class DataverseAccessObjectAsync
     /// <typeparam name="T"></typeparam>
     /// <param name="target"></param>
     /// <param name="relatedEntity"></param>
-    /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<OrganizationResponse> DisassociateEntitiesAsync<T>(EntityReference target, EntityReference relatedEntity, [CallerMemberName] string methodName = "")
+    public Task<OrganizationResponse> DisassociateEntitiesAsync<T>(EntityReference target, EntityReference relatedEntity, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
         where T : Entity
     {
         var request = new DisassociateRequest
@@ -31,7 +31,7 @@ public partial class DataverseAccessObjectAsync
             RelatedEntities = new EntityReferenceCollection { relatedEntity },
             Relationship = new Relationship(typeof(T).Name),
         };
-        return ExecuteAsync(request, methodName);
+        return ExecuteAsync(request, ct, callerMethodName);
     }
 
     /// <summary>
@@ -40,9 +40,9 @@ public partial class DataverseAccessObjectAsync
     /// <param name="relationshipName"></param>
     /// <param name="target"></param>
     /// <param name="relatedEntity"></param>
-    /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<OrganizationResponse> DisassociateEntitiesAsync(string relationshipName, EntityReference target, EntityReference relatedEntity, [CallerMemberName] string methodName = "")
+    public Task<OrganizationResponse> DisassociateEntitiesAsync(string relationshipName, EntityReference target, EntityReference relatedEntity, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
     {
         var request = new DisassociateRequest
         {
@@ -50,6 +50,6 @@ public partial class DataverseAccessObjectAsync
             RelatedEntities = new EntityReferenceCollection { relatedEntity },
             Relationship = new Relationship(relationshipName),
         };
-        return ExecuteAsync(request, methodName);
+        return ExecuteAsync(request, ct, callerMethodName);
     }
 }

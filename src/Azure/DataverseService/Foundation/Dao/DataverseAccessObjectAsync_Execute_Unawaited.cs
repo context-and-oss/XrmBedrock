@@ -21,9 +21,8 @@ public partial class DataverseAccessObjectAsync
     /// <param name="request"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<OrganizationResponse> ExecuteUnawaitedAsync(OrganizationRequest request, [CallerMemberName] string callerMethodName = "")
+    public Task<OrganizationResponse> ExecuteUnawaitedAsync(OrganizationRequest request, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
     {
-        var executeMethod = () => CancellationTokenIsSet() ? orgServiceAsync.ExecuteAsync(request, cancellationToken) : orgServiceAsync.ExecuteAsync(request);
-        return DataverseWrapAccessAsync.GenericExecuteInXrmUnawaitedAsync(logger, nameof(ExecuteUnawaitedAsync), callerMethodName, executeMethod);
+        return DataverseWrapAccessAsync.GenericExecuteInXrmUnawaitedAsync(logger, nameof(ExecuteUnawaitedAsync), callerMethodName, () => orgServiceAsync.ExecuteAsync(request, ct == default ? cancellationToken : ct));
     }
 }
