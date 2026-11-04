@@ -14,5 +14,5 @@ namespace SharedContext.Dao;
 public partial class DataverseAccessObject(IOrganizationService orgService, ILogger logger) : IDataverseAccessObject
 {
     protected readonly ILogger logger = logger;
-    private readonly CacheHandler cacheHandler = new(MemoryCache.Default, logger);
+    protected readonly CacheHandler cacheHandler = new(MemoryCache.Default, logger);
 }

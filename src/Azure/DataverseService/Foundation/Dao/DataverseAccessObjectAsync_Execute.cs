@@ -1,12 +1,6 @@
 using DataverseService.Foundation.Dao;
 using Microsoft.Xrm.Sdk;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Azure.DataverseService.Foundation.Dao;
 
@@ -18,10 +12,11 @@ public partial class DataverseAccessObjectAsync
     /// Generic Async method that executes an OrganisationRequest in XRM
     /// </summary>
     /// <param name="request"></param>
-    /// <param name="methodName"></param>
+    /// <param name="ct"></param>
+    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<OrganizationResponse> ExecuteAsync(OrganizationRequest request, [CallerMemberName] string methodName = "")
+    public Task<OrganizationResponse> ExecuteAsync(OrganizationRequest request, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
     {
-        return DataverseWrapAccessAsync.GenericExecuteInXrmAsync(logger, () => CancellationTokenIsSet() ? orgServiceAsync.ExecuteAsync(request, cancellationToken) : orgServiceAsync.ExecuteAsync(request), methodName);
+        return DataverseWrapAccessAsync.GenericExecuteInXrmAsync(logger, nameof(ExecuteAsync), callerMethodName, () => orgServiceAsync.ExecuteAsync(request, ct == default ? cancellationToken : ct));
     }
 }

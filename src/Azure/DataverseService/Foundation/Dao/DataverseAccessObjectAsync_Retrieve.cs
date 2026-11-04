@@ -1,9 +1,12 @@
+using DataverseService.Foundation.Dao;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+using SharedContext.Dao;
+using SharedContext.Dao.Exceptions;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using XrmBedrock.SharedContext;
-using Task = System.Threading.Tasks.Task;
 
 namespace Azure.DataverseService.Foundation.Dao;
 
@@ -12,63 +15,107 @@ public partial class DataverseAccessObjectAsync
 #pragma warning restore MA0048 // File name must match type name
 {
     /// <summary>
-    /// Generically Async method that retrieves the object with type <typeparamref name="T"/> with the specified guid from XRM
-    /// The return type is <typeparamref name="T"/> so use the selector "x => x" if you truly want the entire object with all attributes, but
-    /// if you only need a couple of values use a selector like "x => new <typeparamref name="T"/>(x.Id) { somecol = x.somecol, anothercol = x.anothercol, ... }"
-    /// Please note the overload of this method where you don't even have to specify new T(...
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="guidOfElement"></param>
-    /// <param name="selector"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidDataException">Thrown if element is not found</exception>
-    public Task<T> RetrieveAsync<T>(Guid guidOfElement, Func<T, T> selector, [CallerMemberName] string callerMethodName = "")
-        where T : Entity => Task.Run(() => Retrieve<T>(guidOfElement, selector, callerMethodName));
-
-    /// <summary>
-    /// Generically asynchronously retrieves the object with type <typeparamref name="T"/> with the specified guid from XRM
-    /// If you truly want the entire object with all attributes use the override with x => x as selector
+    /// Asynchronously retrieves the object with type <typeparamref name="T"/> with the specified guid from XRM
+    /// If you truly want the entire object with all attributes then don't specify any columns and it will default to all
     /// If you only need a couple of values specify these like "x => x.somecol, x => x.anothercol, ... "
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="guidOfElement"></param>
+    /// <param name="columnExpressions"></param>
     /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="Exception"></exception>
     public Task<T> RetrieveAsync<T>(Guid guidOfElement, params Expression<Func<T, object?>>[] columnExpressions)
-        where T : Entity => Task.Run(() => Retrieve<T>(guidOfElement, columnExpressions));
+        where T : Entity
+    {
+        var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
+        return RetrieveCoreAsync<T>(guidOfElement, cancellationToken, nameof(RetrieveAsync), callerMethodName);
+    }
 
     /// <summary>
-    /// Generically asynchronously retrieves the object with type <typeparamref name="T0"/> with the specified guid from XRM and returns either a single value (class ie string, EntityReference, ...) or
-    /// another "container object" of type <typeparamref name="T1"/>
-    /// If you just need a single value like Fullname of a Contact use a selector like "x => x.Fullname"
+    /// Asynchronously retrieves the object with type <typeparamref name="T"/> with the specified guid from XRM
+    /// If you truly want the entire object with all attributes then don't specify any columns and it will default to all
+    /// If you only need a couple of values specify these like "x => x.somecol, x => x.anothercol, ... "
     /// </summary>
-    /// <typeparam name="T0"></typeparam>
-    /// <typeparam name="T1"></typeparam>
+    /// <typeparam name="T"></typeparam>
     /// <param name="guidOfElement"></param>
-    /// <param name="selector"></param>
+    /// <param name="ct"></param>
+    /// <param name="columnExpressions"></param>
+    /// <returns></returns>
+    public Task<T> RetrieveWithCtAsync<T>(Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object?>>[] columnExpressions)
+        where T : Entity
+    {
+        var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
+        return RetrieveCoreAsync<T>(guidOfElement, ct, nameof(RetrieveWithCtAsync), callerMethodName);
+    }
+
+    /// <summary>
+    /// Asynchronously retrieves a List of Entities of type <typeparamref name="T"/> from XRM.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="query"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<T1> RetrieveAsync<T0, T1>(Guid guidOfElement, Func<T0, T1> selector, [CallerMemberName] string callerMethodName = "")
-        where T0 : Entity
-        where T1 : class => Task.Run(() => Retrieve<T0, T1>(guidOfElement, selector, callerMethodName));
+    public Task<List<T>> RetrieveListAsync<T>(QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
+        where T : Entity
+    {
+        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}<{typeof(T)}>", callerMethodName, async () =>
+        {
+            return (await RetrieveMultipleRawAsync(query, ct).ToListAsync()).ConvertAll(x => x.ToEntity<T>());
+        });
+    }
 
     /// <summary>
-    /// Generically asynchronously retrieves the object with type T0 with the specified guid from XRM and returns a single value (struct ie int, DateTime, ...) of type T1
-    /// Use it with a selector like "x => x.CreatedOn"
+    /// Asynchronously retrieves a List of Entities of type <typeparamref name="T"/> from XRM using linq using a default mapper to map from Entity to <typeparamref name="T"/>
     /// </summary>
-    /// <typeparam name="T0"></typeparam>
-    /// <typeparam name="T1"></typeparam>
-    /// <param name="guidOfElement"></param>
-    /// <param name="selector"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="delegateQueryFunction"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<T1?> RetrieveAsync<T0, T1>(Guid guidOfElement, Func<T0, T1?> selector, [CallerMemberName] string callerMethodName = "")
-        where T0 : Entity
-        where T1 : struct => Task.Run(() => Retrieve<T0, T1>(guidOfElement, selector, callerMethodName));
+    public Task<List<T>> RetrieveListAsync<T>(Func<Xrm, IQueryable<T>> delegateQueryFunction, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
+        where T : Entity
+    {
+        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}", callerMethodName, () =>
+        {
+            return RetrieveListRawAsync(delegateQueryFunction, x => x.ToEntity<T>(), ct);
+        });
+    }
 
     /// <summary>
-    /// Generically asynchronously retrieves a list of objects by their Guids
+    /// Asynchronously retrieves a List of Entities of type <typeparamref name="T"/> from XRM using linq using a custom mapper to map from Entity to <typeparamref name="T"/>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="delegateQueryFunction"></param>
+    /// <param name="mapper"></param>
+    /// <param name="ct"></param>
+    /// <param name="callerMethodName"></param>
+    /// <returns></returns>
+    public Task<List<T>> RetrieveListAsync<T>(Func<Xrm, IQueryable<T>> delegateQueryFunction, Func<Entity, T> mapper, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
+    {
+        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}", callerMethodName, () =>
+        {
+            return RetrieveListRawAsync(delegateQueryFunction, mapper, ct);
+        });
+    }
+
+    /// <summary>
+    /// Asynchronously retrieves IAsyncEnumerable of Entities from XRM.
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="ct"></param>
+    /// <param name="callerMethodName"></param>
+    /// <returns></returns>
+    public Task<List<Entity>> RetrieveListAsync(QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
+    {
+        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}", callerMethodName, async () =>
+        {
+            return await RetrieveMultipleRawAsync(query, ct).ToListAsync();
+        });
+    }
+
+    /// <summary>
+    /// Asynchronously retrieves a list of objects by their Guids
     /// When field name is not specified, the default is entityname+"id", see overload of method for an alternative field name
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -76,10 +123,10 @@ public partial class DataverseAccessObjectAsync
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
     public Task<List<T>> RetrieveMultipleByIdsAsync<T>(IEnumerable<Guid> guids, params Expression<Func<T, object>>[] columnExpressions)
-        where T : Entity => Task.Run(() => RetrieveMultipleByIds<T>(guids, columnExpressions));
+        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName: null, cancellationToken, columnExpressions);
 
     /// <summary>
-    /// Generically asynchronously retrieves a list of objects by their Guids
+    /// Asynchronously retrieves a list of objects by their Guids where you specify the name of the Guid column
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="guids"></param>
@@ -87,88 +134,117 @@ public partial class DataverseAccessObjectAsync
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
     public Task<List<T>> RetrieveMultipleByIdsAsync<T>(IEnumerable<Guid> guids, string fieldName, params Expression<Func<T, object>>[] columnExpressions)
-        where T : Entity => Task.Run(() => RetrieveMultipleByIds<T>(guids, fieldName, columnExpressions));
+        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName, cancellationToken, columnExpressions);
 
     /// <summary>
-    /// Generically asynchronously retrieves a list of objects <typeparamref name="T"/> from XRM.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
+    /// Asynchronously retrieves a list of objects by their Guids
+    /// When field name is not specified, the default is entityname+"id", see overload of method for an alternative field name
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
+    /// <param name="guids"></param>
+    /// <param name="ct"></param>
+    /// <param name="columnExpressions"></param>
     /// <returns></returns>
-    public Task<List<T>> RetrieveListAsync<T>(Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveList<T>(delegateQueryFunction, callerMethodName));
+    public Task<List<T>> RetrieveMultipleByIdsWithCtAsync<T>(IEnumerable<Guid> guids, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, null, ct, columnExpressions);
 
     /// <summary>
-    /// Generically asynchronously retrieves a list of objects <typeparamref name="T"/> from XRM.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
+    /// Asynchronously retrieves a list of objects by their Guids where you specify the name of the Guid column
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    /// <param name="guids"></param>
+    /// <param name="fieldName">Name of the Guid-field</param>
+    /// <param name="ct"></param>
+    /// <param name="columnExpressions"></param>
+    /// <returns></returns>
+    public Task<List<T>> RetrieveMultipleByIdsWithCtAsync<T>(IEnumerable<Guid> guids, string fieldName, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName, ct, columnExpressions);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "Not possible with the params parameters")]
+    private Task<T> RetrieveCoreAsync<T>(Guid guidOfElement, CancellationToken ct, string methodethodName, string callerMethodName, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity
+    {
+        var entityName = DataverseStaticExtensions.LogicalName<T>();
+        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{methodethodName}({guidOfElement})", callerMethodName, async () =>
+        {
+            var cols = columnExpressions.ToList().ConvertAll(x => x.StringOf()).ToArray();
+            var columnSet = cols is null || !cols.Any() ? new ColumnSet(true) : new ColumnSet(cols);
+            try
+            {
+                var ret = await orgServiceAsync.RetrieveAsync(entityName, guidOfElement, columnSet, ct);
+                return ret.ToEntity<T>();
+            }
+            catch (InvalidOperationException ioe)
+            {
+                throw new DataverseInteractionException($"There is no {entityName} with id {guidOfElement} in Xrm", ioe);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Asynchronously retrieves IAsyncEnumerable of Entities from XRM with no wrapping
+    /// </summary>
     /// <param name="query"></param>
-    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<List<T>> RetrieveListAsync<T>(QueryExpression query, [CallerMemberName] string callerMethodName = "")
-        where T : Entity => Task.Run(() => RetrieveList<T>(query, callerMethodName));
+    private async IAsyncEnumerable<Entity> RetrieveMultipleRawAsync(QueryExpression query, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var currentCancellationToken = ct == default ? cancellationToken : ct;
+        var resp = await orgServiceAsync.RetrieveMultipleAsync(query, currentCancellationToken);
 
-    /// <summary>
-    /// Generically asynchronously retrieves IEnumerable of objects <typeparamref name="T"/> from XRM.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<IEnumerable<T>> RetrieveIEnumerableAsync<T>(Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveIEnumerable<T>(delegateQueryFunction, callerMethodName));
+        foreach (var entity in resp.Entities)
+        {
+            yield return entity;
+        }
 
-    /// <summary>
-    /// Generically asynchronously retrieves IEnumerable of Entities from XRM.
-    /// </summary>
-    /// <param name="query"></param>
-    /// <returns></returns>
-    public Task<IEnumerable<Entity>> RetrieveMultipleAsync(QueryExpression query)
-        => Task.Run(() => RetrieveMultiple(query));
+        if (query.PageInfo.PageNumber == 0)
+        {
+            query.PageInfo.PageNumber = 1;
+        }
 
-    /// <summary>
-    /// Generically asynchronously retrieves an object <typeparamref name="T"/> from XRM using Single. Will throw an exception if there are no results or more than one result.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T> RetrieveSingleAsync<T>(Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveSingle<T>(delegateQueryFunction, callerMethodName));
+        while (resp.MoreRecords)
+        {
+            currentCancellationToken.ThrowIfCancellationRequested();
+            query.PageInfo.PageNumber++;
+            query.PageInfo.PagingCookie = resp.PagingCookie;
+            resp = await orgServiceAsync.RetrieveMultipleAsync(query, currentCancellationToken);
 
-    /// <summary>
-    /// Generically asynchronously retrieves an object <typeparamref name="T"/> from XRM using SingleOrDefault. Will throw an exception if there are more than one result.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T?> RetrieveSingleOrDefaultAsync<T>(Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveSingleOrDefault<T>(delegateQueryFunction, callerMethodName));
+            foreach (var entity in resp.Entities)
+            {
+                yield return entity;
+            }
+        }
+    }
 
-    /// <summary>
-    /// Generically asynchronously retrieves an object <typeparamref name="T"/> from XRM using First. Will throw an exception if there are no results.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T> RetrieveFirstAsync<T>(Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveFirst<T>(delegateQueryFunction, callerMethodName));
+    private async Task<List<T>> RetrieveListRawAsync<T>(Func<Xrm, IQueryable<T>> delegateQueryFunction, Func<Entity, T> mapper, CancellationToken ct = default)
+    {
+        using (Xrm xrm = new Xrm(orgServiceAsync))
+        {
+            var lq = delegateQueryFunction(xrm);
+            var qe = lq.ToQueryExpression<T>() ?? throw new InvalidOperationException("Unable to get the QueryExpression from the Linq Query");
+            var es = await RetrieveMultipleRawAsync(qe, ct).ToListAsync(ct);
+            var ts = es.ConvertAll(x => mapper(x));
+            return ts;
+        }
+    }
 
-    /// <summary>
-    /// Generically asynchronously retrieves an object <typeparamref name="T"/> from XRM using First. Will return null if there are no results.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="delegateQueryFunction"></param>
-    /// <param name="callerMethodName"></param>
-    /// <returns></returns>
-    public Task<T?> RetrieveFirstOrDefaultAsync<T>(Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "")
-        => Task.Run(() => RetrieveFirstOrDefault<T>(delegateQueryFunction, callerMethodName));
+    private async Task<List<T>> RetrieveMultipleByIdsRawAsync<T>(string callerMethodName, IEnumerable<Guid> guids, string? fieldName, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity
+    {
+        var guidArray = guids.ToArray();
+        if (guidArray.Length == 0)
+            return new List<T>();
+
+        var entityLogicalName = DataverseStaticExtensions.LogicalName<T>();
+        var columnSet = columnExpressions.ToList().ConvertAll(x => x.StringOf()).ToArray();
+        var query = new QueryExpression(entityLogicalName)
+        {
+            ColumnSet = columnSet.Length == 0 ? new ColumnSet(true) : new ColumnSet(columnSet),
+            Criteria = new FilterExpression(),
+        };
+        var condition = new ConditionExpression(fieldName ?? $"{entityLogicalName}id", ConditionOperator.In, guidArray);
+        var filter = new FilterExpression();
+        filter.Conditions.Add(condition);
+        query.Criteria.AddFilter(filter);
+        return await RetrieveListAsync<T>(query, ct, callerMethodName);
+    }
 }

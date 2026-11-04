@@ -1,12 +1,6 @@
 using DataverseService.Foundation.Dao;
 using Microsoft.Xrm.Sdk;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Azure.DataverseService.Foundation.Dao;
 
@@ -19,11 +13,11 @@ public partial class DataverseAccessObjectAsync
     /// NOTE! This is an UnawaitedAsync method so caller is responsible for all exception handling. Please keep it uniform!
     /// </summary>
     /// <param name="request"></param>
-    /// <param name="methodName"></param>
+    /// <param name="ct"></param>
+    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Task<OrganizationResponse> ExecuteUnawaitedAsync(OrganizationRequest request, [CallerMemberName] string methodName = "")
+    public Task<OrganizationResponse> ExecuteUnawaitedAsync(OrganizationRequest request, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
     {
-        var executeMethod = () => CancellationTokenIsSet() ? orgServiceAsync.ExecuteAsync(request, cancellationToken) : orgServiceAsync.ExecuteAsync(request);
-        return DataverseWrapAccessAsync.GenericExecuteInXrmUnawaitedAsync(logger, executeMethod, methodName);
+        return DataverseWrapAccessAsync.GenericExecuteInXrmUnawaitedAsync(logger, nameof(ExecuteUnawaitedAsync), callerMethodName, () => orgServiceAsync.ExecuteAsync(request, ct == default ? cancellationToken : ct));
     }
 }
