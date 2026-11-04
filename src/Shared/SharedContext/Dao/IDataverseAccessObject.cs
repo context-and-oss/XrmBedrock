@@ -1,11 +1,15 @@
-using XrmBedrock.SharedContext;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using XrmBedrock.SharedContext;
 
 namespace SharedContext.Dao;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1516:Elements should be separated by blank line", Justification = "We will allow it here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1127:Generic type constraints should be on their own line", Justification = "We will allow it here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "We will allow it here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "We will allow it here")]
 public interface IDataverseAccessObject
 {
     OrganizationResponse AssociateEntities(string relationshipName, EntityReference target, EntityReference relatedEntity, [CallerMemberName] string callerMethodName = "");
@@ -50,7 +54,6 @@ public interface IDataverseAccessObject
     T? RetrieveSingleOrDefaultCachable<T>(string cacheKey, Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "");
     T RetrieveFirstCachable<T>(string cacheKey, Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "");
     T? RetrieveFirstOrDefaultCachable<T>(string cacheKey, Func<Xrm, IEnumerable<T>> delegateQueryFunction, [CallerMemberName] string callerMethodName = "");
-
     List<T> RetrieveListCachable<T>(string cacheKey, Func<Xrm, IEnumerable<T>> del, [CallerMemberName] string callerMethodName = "");
     List<T> RetrieveListCachable<T>(string cacheKey, QueryExpression query, [CallerMemberName] string callerMethodName = "") where T : Entity;
     List<T> RetrieveMultipleByIds<T>(IEnumerable<Guid> guids, params Expression<Func<T, object>>[] columnExpressions) where T : Entity;

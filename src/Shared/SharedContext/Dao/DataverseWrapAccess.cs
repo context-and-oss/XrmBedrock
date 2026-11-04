@@ -7,7 +7,9 @@ using System.ServiceModel;
 
 namespace SharedContext.Dao;
 
-internal class DataverseWrapAccess
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1501:Statement should not be on a single line", Justification = "We will allow it here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1123:Do not place regions within elements", Justification = "We will allow it here")]
+internal static class DataverseWrapAccess
 {
     public static T WrapFunction<T>(ILogger logger, string operationName, string targetName, Func<T> coreFunction, string callerMethodName, string additionalInfo = null)
     {
@@ -59,8 +61,9 @@ internal class DataverseWrapAccess
     {
         List<string> attributes = [];
         foreach (KeyValuePair<string, object> attribute in entity.Attributes)
+
             // Until we know where logs are put and which restrictions apply to logged data we will NOT log attribute values
-            //    attributes.Add(attribute.Key + ": " + attribute.Value);
+            //    attributes.Add(attribute.Key + ": " + attribute.Value)
             attributes.Add(attribute.Key);
         var attributesFormatted = string.Join("; ", attributes);
         return attributesFormatted;
@@ -71,10 +74,9 @@ internal class DataverseWrapAccess
         {
             QueryExpression expression => expression.EntityName,
             FetchExpression => "FetchExpression",
-            _ => "",
+            _ => string.Empty,
         };
 
-    #region Private methods
     /// <summary>
     /// Formats the errormessage for the XRM 2011 Organization service exceptions (FaultException&lt;OrganizationServiceFault&gt;)
     /// </summary>
@@ -82,6 +84,7 @@ internal class DataverseWrapAccess
     {
         return new DataverseInteractionException($"{message} e.Detail.Innerfault = {e.Detail?.InnerFault?.Message}, e.Detail.ErrorCode = 0x{e.Detail?.ErrorCode}, e.Detail.Message = {e.Detail?.Message}, e.Detail.Innerfault.Innerfault = {e.Detail?.InnerFault?.InnerFault?.Message}", e);
     }
+
     /// <summary>
     /// Formats the errormessage for a generic WCF FaultException
     /// </summary>
@@ -94,5 +97,4 @@ internal class DataverseWrapAccess
     {
         return new DataverseInteractionException(errorMsg + " Details: " + e.Message, e);
     }
-    #endregion Private methods
 }

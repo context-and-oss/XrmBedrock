@@ -1,15 +1,12 @@
 using DataverseService.Foundation.Dao;
-using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
 using SharedContext.Dao;
+using SharedContext.Dao.Exceptions;
 using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using XrmBedrock.SharedContext;
-using Task = System.Threading.Tasks.Task;
 
 namespace Azure.DataverseService.Foundation.Dao;
 
@@ -30,7 +27,7 @@ public partial class DataverseAccessObjectAsync
     public Task<T> RetrieveAsync<T>(Guid guidOfElement, params Expression<Func<T, object>>[] columnExpressions)
         where T : Entity
     {
-        var callerMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+        var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
         return RetrieveCoreAsync<T>(guidOfElement, cancellationToken, nameof(RetrieveAsync), callerMethodName);
     }
 
@@ -47,27 +44,35 @@ public partial class DataverseAccessObjectAsync
     public Task<T> RetrieveWithCtAsync<T>(Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
         where T : Entity
     {
-        var callerMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+        var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
         return RetrieveCoreAsync<T>(guidOfElement, ct, nameof(RetrieveWithCtAsync), callerMethodName);
     }
-
-    
 
     /// <summary>
     /// Asynchronously retrieves a List of Entities of type <typeparamref name="T"/> from XRM.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="query"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public async Task<List<T>> RetrieveListAsync<T>(QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "") where T : Entity
+    public Task<List<T>> RetrieveListAsync<T>(QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
+        where T : Entity
     {
-        return await DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}<{typeof(T)}>", callerMethodName, async () =>
+        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}<{typeof(T)}>", callerMethodName, async () =>
         {
             return (await RetrieveMultipleRawAsync(query, ct).ToListAsync()).ConvertAll(x => x.ToEntity<T>());
         });
     }
 
+    /// <summary>
+    /// Asynchronously retrieves a List of Entities of type <typeparamref name="T"/> from XRM using linq using a default mapper to map from Entity to <typeparamref name="T"/>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="delegateQueryFunction"></param>
+    /// <param name="ct"></param>
+    /// <param name="callerMethodName"></param>
+    /// <returns></returns>
     public Task<List<T>> RetrieveListAsync<T>(Func<Xrm, IQueryable<T>> delegateQueryFunction, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
         where T : Entity
     {
@@ -77,6 +82,15 @@ public partial class DataverseAccessObjectAsync
         });
     }
 
+    /// <summary>
+    /// Asynchronously retrieves a List of Entities of type <typeparamref name="T"/> from XRM using linq using a custom mapper to map from Entity to <typeparamref name="T"/>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="delegateQueryFunction"></param>
+    /// <param name="mapper"></param>
+    /// <param name="ct"></param>
+    /// <param name="callerMethodName"></param>
+    /// <returns></returns>
     public Task<List<T>> RetrieveListAsync<T>(Func<Xrm, IQueryable<T>> delegateQueryFunction, Func<Entity, T> mapper, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
     {
         return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}", callerMethodName, () =>
@@ -89,10 +103,12 @@ public partial class DataverseAccessObjectAsync
     /// Asynchronously retrieves IAsyncEnumerable of Entities from XRM.
     /// </summary>
     /// <param name="query"></param>
+    /// <param name="ct"></param>
+    /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public async Task<List<Entity>> RetrieveListAsync(QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
+    public Task<List<Entity>> RetrieveListAsync(QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
     {
-        return await DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}", callerMethodName, async () =>
+        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{nameof(RetrieveListAsync)}", callerMethodName, async () =>
         {
             return await RetrieveMultipleRawAsync(query, ct).ToListAsync();
         });
@@ -107,7 +123,7 @@ public partial class DataverseAccessObjectAsync
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
     public Task<List<T>> RetrieveMultipleByIdsAsync<T>(IEnumerable<Guid> guids, params Expression<Func<T, object>>[] columnExpressions)
-        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1).GetMethod().Name, guids, null, cancellationToken, columnExpressions);
+        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName: null, cancellationToken, columnExpressions);
 
     /// <summary>
     /// Asynchronously retrieves a list of objects by their Guids where you specify the name of the Guid column
@@ -118,7 +134,7 @@ public partial class DataverseAccessObjectAsync
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
     public Task<List<T>> RetrieveMultipleByIdsAsync<T>(IEnumerable<Guid> guids, string fieldName, params Expression<Func<T, object>>[] columnExpressions)
-        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1).GetMethod().Name, guids, fieldName, cancellationToken, columnExpressions);
+        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName, cancellationToken, columnExpressions);
 
     /// <summary>
     /// Asynchronously retrieves a list of objects by their Guids
@@ -126,10 +142,11 @@ public partial class DataverseAccessObjectAsync
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="guids"></param>
+    /// <param name="ct"></param>
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
     public Task<List<T>> RetrieveMultipleByIdsWithCtAsync<T>(IEnumerable<Guid> guids, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
-        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1).GetMethod().Name, guids, null, ct, columnExpressions);
+        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, null, ct, columnExpressions);
 
     /// <summary>
     /// Asynchronously retrieves a list of objects by their Guids where you specify the name of the Guid column
@@ -137,10 +154,11 @@ public partial class DataverseAccessObjectAsync
     /// <typeparam name="T"></typeparam>
     /// <param name="guids"></param>
     /// <param name="fieldName">Name of the Guid-field</param>
+    /// <param name="ct"></param>
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
     public Task<List<T>> RetrieveMultipleByIdsWithCtAsync<T>(IEnumerable<Guid> guids, string fieldName, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
-        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1).GetMethod().Name, guids, fieldName, ct, columnExpressions);
+        where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName, ct, columnExpressions);
 
     private Task<T> RetrieveCoreAsync<T>(Guid guidOfElement, CancellationToken ct, string methodethodName, string callerMethodName, params Expression<Func<T, object>>[] columnExpressions)
         where T : Entity
@@ -157,7 +175,7 @@ public partial class DataverseAccessObjectAsync
             }
             catch (InvalidOperationException ioe)
             {
-                throw new Exception($"There is no {entityName} with id {guidOfElement} in Xrm", ioe);
+                throw new DataverseInteractionException($"There is no {entityName} with id {guidOfElement} in Xrm", ioe);
             }
         });
     }
@@ -202,20 +220,18 @@ public partial class DataverseAccessObjectAsync
         {
             var lq = delegateQueryFunction(xrm);
             var qe = lq.ToQueryExpression<T>();
-            var es = await RetrieveMultipleRawAsync(qe, ct).ToListAsync();
+            var es = await RetrieveMultipleRawAsync(qe, ct).ToListAsync(ct);
             var ts = es.ConvertAll(x => mapper(x));
             return ts;
         }
     }
 
-    private async Task<List<T>> RetrieveMultipleByIdsRawAsync<T>(string callerMethodName, IEnumerable<Guid> guids, string fieldName, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
+    private async Task<List<T>> RetrieveMultipleByIdsRawAsync<T>(string callerMethodName, IEnumerable<Guid> guids, string? fieldName, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
         where T : Entity
     {
         var guidArray = guids.ToArray();
         if (guidArray.Length == 0)
-        {
             return new List<T>();
-        }
 
         var entityLogicalName = DataverseStaticExtensions.LogicalName<T>();
         var columnSet = columnExpressions.ToList().ConvertAll(x => x.StringOf()).ToArray();

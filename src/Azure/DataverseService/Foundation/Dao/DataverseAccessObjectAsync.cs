@@ -2,7 +2,6 @@ using DataverseService.Foundation.Dao;
 using Microsoft.Extensions.Logging;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using SharedContext.Dao;
-using XrmPluginCore;
 
 namespace Azure.DataverseService.Foundation.Dao;
 

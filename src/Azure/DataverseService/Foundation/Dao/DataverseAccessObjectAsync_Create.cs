@@ -13,6 +13,7 @@ public partial class DataverseAccessObjectAsync
     /// </summary>
     /// <typeparam name="T0"></typeparam>
     /// <param name="entity"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
     public Task<Guid> CreateAsync<T0>(T0 entity, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")

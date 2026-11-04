@@ -1,12 +1,6 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Azure.DataverseService.Foundation.Dao;
 
@@ -21,6 +15,7 @@ public partial class DataverseAccessObjectAsync
     /// <typeparam name="T"></typeparam>
     /// <param name="target"></param>
     /// <param name="relatedEntity"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
     public Task<OrganizationResponse> AssociateEntitiesUnawaitedAsync<T>(EntityReference target, EntityReference relatedEntity, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
@@ -43,6 +38,7 @@ public partial class DataverseAccessObjectAsync
     /// <param name="relationshipName"></param>
     /// <param name="target"></param>
     /// <param name="relatedEntity"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
     public Task<OrganizationResponse> AssociateEntitiesUnawaitedAsync(string relationshipName, EntityReference target, EntityReference relatedEntity, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
@@ -64,6 +60,7 @@ public partial class DataverseAccessObjectAsync
     /// <param name="relationshipName"></param>
     /// <param name="target"></param>
     /// <param name="relatedEntities"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
     public Task<OrganizationResponse> AssociateEntitiesUnawaitedAsync(string relationshipName, EntityReference target, IEnumerable<EntityReference> relatedEntities, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")

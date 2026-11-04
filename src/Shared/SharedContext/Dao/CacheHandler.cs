@@ -90,7 +90,7 @@ public class CacheHandler(MemoryCache cache, ILogger logger)
         var value = _cache.Get(key);
         if (value == null) return $"No value for key '{key}' found in cache";
         string valueStr = null;
-        if (value.GetType() == typeof(string)) valueStr = value.ToString();
+        if (value is string) valueStr = value.ToString();
         if (string.IsNullOrEmpty(valueStr)) return $"Key '{key}' found in cache with type '{value.GetType()}'";
         return $"Key '{key}' found in cache with type '{value.GetType()}' and value '{valueStr}'";
     }

@@ -3,7 +3,6 @@ using Microsoft.Xrm.Sdk.Query;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using XrmBedrock.SharedContext;
-using Task = System.Threading.Tasks.Task;
 
 namespace Azure.DataverseService.Foundation.Dao;
 
@@ -29,6 +28,7 @@ public partial class DataverseAccessObjectAsync
     /// <typeparam name="T"></typeparam>
     /// <param name="cacheKey"></param>
     /// <param name="guidOfElement"></param>
+    /// <param name="ct"></param>
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
     public Task<T> RetrieveCachableWithCtAsync<T>(string cacheKey, Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
@@ -41,18 +41,19 @@ public partial class DataverseAccessObjectAsync
     /// <typeparam name="T"></typeparam>
     /// <param name="cacheKey"></param>
     /// <param name="query"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
     public Task<List<T>> RetrieveListCachableAsync<T>(string cacheKey, QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
         where T : Entity
         => cacheHandler.GetOrCreateAsync<List<T>>(cacheKey, () => RetrieveListAsync<T>(query, ct, callerMethodName));
 
-
     /// <summary>
     /// Same as RetrieveListAsync but allows the use of caching of the retrieved list of objects by the specified cacheKey
     /// </summary>
     /// <param name="cacheKey"></param>
     /// <param name="query"></param>
+    /// <param name="ct"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
     public Task<List<Entity>> RetrieveListCachableAsync(string cacheKey, QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
@@ -83,5 +84,4 @@ public partial class DataverseAccessObjectAsync
     /// <returns></returns>
     public Task<List<T>> RetrieveListCachableAsync<T>(string cacheKey, Func<Xrm, IQueryable<T>> delegateQueryFunction, Func<Entity, T> mapper, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
         => cacheHandler.GetOrCreateAsync<List<T>>(cacheKey, () => RetrieveListAsync<T>(delegateQueryFunction, mapper, ct, callerMethodName));
-
 }

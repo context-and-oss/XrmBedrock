@@ -1,14 +1,9 @@
-using System;
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
+using SharedContext.Dao.Exceptions;
 using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Runtime.Caching;
 using System.Runtime.CompilerServices;
-using System.Text;
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Metadata;
-using Microsoft.Xrm.Sdk.Query;
-using SharedContext.Dao;
 using XrmBedrock.SharedContext;
 
 namespace SharedContext.Dao;
@@ -39,7 +34,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
                 }
                 catch (InvalidOperationException ioe)
                 {
-                    throw new Exception($"There is no {typeof(T)} with id {guid} in Xrm", ioe);
+                    throw new DataverseInteractionException($"There is no {typeof(T)} with id {guid} in Xrm", ioe);
                 }
             }
         }, callerMethodName);
@@ -94,7 +89,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
                 }
                 catch (InvalidOperationException ioe)
                 {
-                    throw new Exception($"There is no {typeof(T0)} with id {guid} in Xrm", ioe);
+                    throw new DataverseInteractionException($"There is no {typeof(T0)} with id {guid} in Xrm", ioe);
                 }
             }
         }, callerMethodName);
@@ -122,7 +117,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
                 }
                 catch (InvalidOperationException ioe)
                 {
-                    throw new Exception($"There is no {typeof(T0)} with id {guid} in Xrm", ioe);
+                    throw new DataverseInteractionException($"There is no {typeof(T0)} with id {guid} in Xrm", ioe);
                 }
             }
         }, callerMethodName);
