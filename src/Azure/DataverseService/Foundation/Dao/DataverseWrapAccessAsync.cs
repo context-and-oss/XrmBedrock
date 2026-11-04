@@ -3,9 +3,13 @@ using Microsoft.Xrm.Sdk;
 using SharedContext.Dao.Exceptions;
 using System.Diagnostics;
 using System.ServiceModel;
+using Task = System.Threading.Tasks.Task;
 
 namespace DataverseService.Foundation.Dao;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1123:Do not use regions", Justification = "We will allow this here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:Do not use regions", Justification = "We will allow this here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1501:Statement should not be on a single line", Justification = "We will allow this here")]
 public static class DataverseWrapAccessAsync
 {
     #region generic create
@@ -15,11 +19,14 @@ public static class DataverseWrapAccessAsync
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="entity"></param>
     /// <param name="coremethod"></param>
     /// <returns></returns>
     public static async Task<Guid> GenericCreateInXrmAsync(ILogger logger, string methodName, string callerMethodName, Entity entity, Func<Task<Guid>> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(coremethod);
         var entityName = entity.GetType().Name;
         var attributesFormatted = GetAttributesFormatted(entity);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Creates '{entityName}' in XRM with data '{attributesFormatted}'");
@@ -42,11 +49,14 @@ public static class DataverseWrapAccessAsync
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="entity"></param>
     /// <param name="coremethod"></param>
     /// <returns></returns>
     public static Task<Guid> GenericCreateInXrmUnawaitedAsync(ILogger logger, string methodName, string callerMethodName, Entity entity, Func<Task<Guid>> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(coremethod);
         var entityName = entity.GetType().Name;
         var attributesFormatted = GetAttributesFormatted(entity);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Creates '{entityName}' in XRM with data '{attributesFormatted}'");
@@ -62,10 +72,13 @@ public static class DataverseWrapAccessAsync
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="entity"></param>
     /// <param name="coremethod"></param>
     public static async Task GenericUpdateInXrmAsync(ILogger logger, string methodName, string callerMethodName, Entity entity, Func<Task> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(coremethod);
         var entityName = entity.GetType().Name;
         var attributesFormatted = GetAttributesFormatted(entity);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Updates '{entity.Id}' of type '{entityName}' with data '{attributesFormatted}'");
@@ -88,10 +101,13 @@ public static class DataverseWrapAccessAsync
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="entity"></param>
     /// <param name="coremethod"></param>
     public static Task GenericUpdateInXrmUnawaitedAsync(ILogger logger, string methodName, string callerMethodName, Entity entity, Func<Task> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(coremethod);
         var entityName = entity.GetType().Name;
         var attributesFormatted = GetAttributesFormatted(entity);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Updates '{entity.Id}' of type '{entityName}' with data '{attributesFormatted}'");
@@ -106,11 +122,14 @@ public static class DataverseWrapAccessAsync
     /// Generic method that wraps "plumbing" when retrieving data from XRM
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    /// <param name="logger"></param>
     /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="coremethod"></param>
     /// <returns></returns>
     public static async Task<T> GenericRetrieveFromXrmAsync<T>(ILogger logger, string methodName, string callerMethodName, Func<Task<T>> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(coremethod);
         var errorMsg = $"{methodName} called by {callerMethodName} failed to retrieve {typeof(T)} in XRM";
         var stopWatch = new Stopwatch();
         stopWatch.Start();
@@ -136,11 +155,14 @@ public static class DataverseWrapAccessAsync
     /// NOTE! This is an UnawaitedAsync method so caller is responsible for all exception handling. Please keep it uniform!
     /// </summary>
     /// <typeparam name="T0"></typeparam>
+    /// <param name="logger"></param>
     /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="coremethod"></param>
     /// <returns></returns>
     public static Task<T0> GenericRetrieveFromXrmUnawaitedAsync<T0>(ILogger logger, string methodName, string callerMethodName, Func<Task<T0>> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(coremethod);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Retrieves {typeof(T0)} in XRM");
         return coremethod();
     }
@@ -154,10 +176,12 @@ public static class DataverseWrapAccessAsync
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="coremethod"></param>
     /// <returns></returns>
     public static async Task<OrganizationResponse> GenericExecuteInXrmAsync(ILogger logger, string methodName, string callerMethodName, Func<Task<OrganizationResponse>> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(coremethod);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Executes request in XRM");
         var errorMsg = $"{methodName} called by {callerMethodName} failed to execute request in XRM";
         try
@@ -178,10 +202,12 @@ public static class DataverseWrapAccessAsync
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="coremethod"></param>
     /// <returns></returns>
     public static Task<OrganizationResponse> GenericExecuteInXrmUnawaitedAsync(ILogger logger, string methodName, string callerMethodName, Func<Task<OrganizationResponse>> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(coremethod);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Executes request in XRM");
         return coremethod();
     }
@@ -194,12 +220,15 @@ public static class DataverseWrapAccessAsync
     /// Generic method that wraps "plumbing" when deleting an object in XRM
     /// </summary>
     /// <param name="logger"></param>
+    /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="entityGuid"></param>
     /// <param name="entityType"></param>
     /// <param name="coremethod"></param>
     /// <returns></returns>
     public static async Task GenericDeleteInXrmAsync(ILogger logger, string methodName, string callerMethodName, Guid entityGuid, string entityType, Func<Task> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(coremethod);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Deletes '{entityType}' with id '{entityGuid}' in XRM");
         var errorMsg = $"{methodName} called by {callerMethodName} failed to delete '{entityType}' with id '{entityGuid}' in XRM";
         try
@@ -219,12 +248,15 @@ public static class DataverseWrapAccessAsync
     /// NOTE! This is an UnawaitedAsync method so caller is responsible for all exception handling. Please keep it uniform!
     /// </summary>
     /// <param name="logger"></param>
+    /// <param name="methodName"></param>
+    /// <param name="callerMethodName"></param>
     /// <param name="entityGuid"></param>
     /// <param name="entityType"></param>
     /// <param name="coremethod"></param>
     /// <returns></returns>
     public static Task GenericDeleteInXrmUnawaitedAsync(ILogger logger, string methodName, string callerMethodName, Guid entityGuid, string entityType, Func<Task> coremethod)
     {
+        ArgumentNullException.ThrowIfNull(coremethod);
         logger.LogTrace($"{methodName} called by {callerMethodName} - Deletes '{entityType}' with id '{entityGuid}' in XRM");
         return coremethod();
     }

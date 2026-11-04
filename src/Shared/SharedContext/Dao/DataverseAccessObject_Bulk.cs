@@ -22,8 +22,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
             $"Bulk",
             typeof(T).FullName,
             () => { return BulkCore<T>(requests, continueOnError, throwOnErrors); },
-            new StackTrace().GetFrame(1).GetMethod().Name
-            );
+            new StackTrace().GetFrame(1).GetMethod().Name);
     }
 
     private List<ExecuteMultipleResponseItem> BulkCore<T>(IEnumerable<T> requests, bool continueOnError = false, bool throwOnErrors = true) where T : OrganizationRequest

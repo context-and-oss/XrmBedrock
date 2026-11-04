@@ -522,24 +522,24 @@ dotnet_diagnostic.SA1519.severity = none	# It has been chosen to accept that a s
 
 dotnet_diagnostic.S3925.severity = none		# rule that requires an implementation that is obsolete in .Net8
 
-[**/Dao/IDataverseAccessObjectAsync.cs]
-dotnet_diagnostic.SA1127.severity = none 	# We accept the lack of newline before generic type constraint in this interface
-dotnet_diagnostic.SA1516.severity = none 	# We accept the lack of newlines between declarations in this interface
+[**/DataverseService/Foundation/Dao/*.cs]
+dotnet_diagnostic.MA0016.severity = none 	# We DO want to return Lists
+dotnet_diagnostic.SA1601.severity = none 	# We do not document partial classes that are introduced to organize code
+dotnet_diagnostic.SA1614.severity = none 	# Element parameter documentation should have text
+dotnet_diagnostic.SA1615.severity = none 	# Element return value should be documented
+dotnet_diagnostic.SA1616.severity = none 	# Element return value documentation should have text 
+dotnet_diagnostic.SA1622.severity = none 	# Generic type parameter documentation should have text
+dotnet_diagnostic.SA1627.severity = none 	# Documentation of exception in tag
+dotnet_diagnostic.SA1649.severity = none 	# Filenames cannot match when using partial classes
 
-[**/Dao/DataverseWrapAccessAsync.cs]
-dotnet_diagnostic.SA1123.severity = none 	# We will accept regions in this file
-dotnet_diagnostic.SA1124.severity = none 	# We will accept regions in this file
-dotnet_diagnostic.SA1501.severity = none 	# We will accept inline statements in this file
-
-[**/Dao/*.cs]
+[**/SharedContext/Dao/*.cs]
 generated_code = true
 dotnet_diagnostic.CA1062.severity = none 	# null-checking relaxed until we have rewritten the logging method of DAO
-dotnet_diagnostic.CS8669.severity = none
+dotnet_diagnostic.CS8669.severity = none	# The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. Auto-generated code requires an explicit '#nullable' directive in source.
 dotnet_diagnostic.MA0016.severity = none 	# We DO want to return Lists
-dotnet_diagnostic.S3247.severity = none
-dotnet_diagnostic.S6602.severity = none
+dotnet_diagnostic.S3247.severity = none		# Replace this type-check-and-cast sequence with an 'as' and a null check.
+dotnet_diagnostic.S6602.severity = none		# "Find" method should be used instead of the "FirstOrDefault" extension method
 dotnet_diagnostic.SA1601.severity = none 	# We do not document partial classes that are introduced to organize code
-dotnet_diagnostic.SA1612.severity = none 	# The parameter documentation is not in the right order
 dotnet_diagnostic.SA1614.severity = none 	# Element parameter documentation should have text
 dotnet_diagnostic.SA1615.severity = none 	# Element return value should be documented
 dotnet_diagnostic.SA1616.severity = none 	# Element return value documentation should have text 

@@ -22,7 +22,8 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public T Retrieve<T>(Guid guid, Func<T, T> selector, [CallerMemberName] string callerMethodName = "") where T : Entity
+    public T Retrieve<T>(Guid guid, Func<T, T> selector, [CallerMemberName] string callerMethodName = "")
+        where T : Entity
     {
         return DataverseWrapAccess.WrapFunction(logger, $"Retrieve({guid})", typeof(T).ToString(), () =>
         {
@@ -47,14 +48,14 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="guid"></param>
+    /// <param name="columnExpressions"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public T Retrieve<T>(Guid guid, params Expression<Func<T, object>>[] columnExpressions) where T : Entity
+    public T Retrieve<T>(Guid guid, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity
     {
         if (columnExpressions == null || columnExpressions.Length == 0)
-        {
             throw new ArgumentException("There is no specification of attributes to retrieve", nameof(columnExpressions));
-        }
 
         Func<T, T> selector = source =>
         {
@@ -77,7 +78,9 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <param name="selector"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public T1 Retrieve<T0, T1>(Guid guid, Func<T0, T1> selector, [CallerMemberName] string callerMethodName = "") where T0 : Entity where T1 : class
+    public T1 Retrieve<T0, T1>(Guid guid, Func<T0, T1> selector, [CallerMemberName] string callerMethodName = "")
+        where T0 : Entity
+        where T1 : class
     {
         return DataverseWrapAccess.WrapFunction(logger, $"Retrieve({guid})", typeof(T0).ToString(), () =>
         {
@@ -105,7 +108,9 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <param name="selector"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public Nullable<T1> Retrieve<T0, T1>(Guid guid, Func<T0, Nullable<T1>> selector, [CallerMemberName] string callerMethodName = "") where T0 : Entity where T1 : struct
+    public Nullable<T1> Retrieve<T0, T1>(Guid guid, Func<T0, Nullable<T1>> selector, [CallerMemberName] string callerMethodName = "")
+        where T0 : Entity
+        where T1 : struct
     {
         return DataverseWrapAccess.WrapFunction(logger, $"Retrieve({guid})", typeof(T0).ToString(), () =>
         {
@@ -131,7 +136,8 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <param name="guids"></param>
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
-    public List<T> RetrieveMultipleByIds<T>(IEnumerable<Guid> guids, params Expression<Func<T, object>>[] columnExpressions) where T : Entity
+    public List<T> RetrieveMultipleByIds<T>(IEnumerable<Guid> guids, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity
     {
         return RetrieveMultipleByIdsInnerMethod(new StackTrace().GetFrame(1).GetMethod().Name, guids, null, columnExpressions);
     }
@@ -144,18 +150,18 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <param name="fieldName">Name of the Guid-field</param>
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
-    public List<T> RetrieveMultipleByIds<T>(IEnumerable<Guid> guids, string fieldName, params Expression<Func<T, object>>[] columnExpressions) where T : Entity
+    public List<T> RetrieveMultipleByIds<T>(IEnumerable<Guid> guids, string fieldName, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity
     {
         return RetrieveMultipleByIdsInnerMethod(new StackTrace().GetFrame(1).GetMethod().Name, guids, fieldName, columnExpressions);
     }
 
-    private List<T> RetrieveMultipleByIdsInnerMethod<T>(string callerMethodName, IEnumerable<Guid> guids, string fieldName = null, params Expression<Func<T, object>>[] columnExpressions) where T : Entity
+    private List<T> RetrieveMultipleByIdsInnerMethod<T>(string callerMethodName, IEnumerable<Guid> guids, string fieldName = null, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity
     {
         var guidArray = guids.ToArray();
         if (guidArray.Length == 0)
-        {
             return [];
-        }
 
         var entityLogicalName = DataverseStaticExtensions.LogicalName<T>();
         var columnSet = columnExpressions.ToList().ConvertAll(x => x.StringOf()).ToArray();
@@ -181,15 +187,15 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <param name="attributeSelector">Expression specifying which attribute to filter on (e.g., x => x.msys_InvoiceNumber)</param>
     /// <param name="columnExpressions">Optional column expressions to specify which columns to retrieve</param>
     /// <returns>List of entities matching any of the specified values</returns>
-    public List<T> RetrieveMultipleByAttribute<T, TValue>(IEnumerable<TValue> values, Expression<Func<T, TValue>> attributeSelector, params Expression<Func<T, object>>[] columnExpressions) where T : Entity
+    public List<T> RetrieveMultipleByAttribute<T, TValue>(IEnumerable<TValue> values, Expression<Func<T, TValue>> attributeSelector, params Expression<Func<T, object>>[] columnExpressions)
+        where T : Entity
     {
         var valueArray = values.ToArray();
         if (valueArray.Length == 0)
-        {
             return [];
-        }
 
         var entityLogicalName = DataverseStaticExtensions.LogicalName<T>();
+
         // Convert the generic expression to one that StringOf can handle
         var attributeName = attributeSelector.ToObjectExpression().StringOf();
         var columnSet = columnExpressions.ToList().ConvertAll(x => x.StringOf()).ToArray();
@@ -223,13 +229,14 @@ public partial class DataverseAccessObject : IDataverseAccessObject
 
     /// <summary>
     /// Generically retrieves a list of objects <typeparamref name="T"/> from XRM.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query 
+    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="query"></param>
     /// <param name="callerMethodName"></param>
     /// <returns></returns>
-    public List<T> RetrieveList<T>(QueryExpression query, [CallerMemberName] string callerMethodName = "") where T : Entity
+    public List<T> RetrieveList<T>(QueryExpression query, [CallerMemberName] string callerMethodName = "")
+        where T : Entity
     {
         return DataverseWrapAccess.WrapFunction(logger, $"RetrieveList", typeof(T).ToString(), () =>
         {
@@ -240,7 +247,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
 
     /// <summary>
     /// Generically retrieves IEnumerable of objects <typeparamref name="T"/> from XRM.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query  
+    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="delegateQueryFunction"></param>
@@ -286,7 +293,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
 
     /// <summary>
     /// Generically retrieves an object <typeparamref name="T"/> from XRM using Single. Will throw an exception if there are no results or more than one result.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query 
+    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="delegateQueryFunction"></param>
@@ -299,7 +306,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
 
     /// <summary>
     /// Generically retrieves an object <typeparamref name="T"/> from XRM using SingleOrDefault. Will throw an exception if there are more than one result.
-    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query 
+    /// Note that T does NOT have to be an entity. It can be any class constructed from data based on an XRM query
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="delegateQueryFunction"></param>

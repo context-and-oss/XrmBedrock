@@ -8,6 +8,10 @@ using Task = System.Threading.Tasks.Task;
 
 namespace DataverseService.Foundation.Dao;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1516:Elements should be separated by blank line", Justification = "We will allow it here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1127:Generic type constraints should be on their own line", Justification = "We will allow it here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "We will allow it here")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "We will allow it here")]
 public interface IDataverseAccessObjectAsync : IAdminDataverseAccessObjectService
 {
     Task<OrganizationResponse> AssociateEntitiesAsync(string relationshipName, EntityReference target, EntityReference relatedEntity, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "");
@@ -28,16 +32,16 @@ public interface IDataverseAccessObjectAsync : IAdminDataverseAccessObjectServic
     Task<OrganizationResponse> ExecuteUnawaitedAsync(OrganizationRequest request, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "");
     Task<T> RetrieveAsync<T>(Guid guidOfElement, params Expression<Func<T, object?>>[] columnExpressions) where T : Entity;
     Task<T> RetrieveWithCtAsync<T>(Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object?>>[] columnExpressions) where T : Entity;
-    Task<T> RetrieveCachableAsync<T>(string cacheKey, Guid guidOfElement, params Expression<Func<T, object>>[] columnExpressions) where T : Entity;
-    Task<T> RetrieveCachableWithCtAsync<T>(string cacheKey, Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions) where T : Entity;
+    Task<T?> RetrieveCachableAsync<T>(string cacheKey, Guid guidOfElement, params Expression<Func<T, object?>>[] columnExpressions) where T : Entity;
+    Task<T?> RetrieveCachableWithCtAsync<T>(string cacheKey, Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object?>>[] columnExpressions) where T : Entity;
     Task<List<Entity>> RetrieveListAsync(QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "");
     Task<List<T>> RetrieveListAsync<T>(QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "") where T : Entity;
     Task<List<T>> RetrieveListAsync<T>(Func<Xrm, IQueryable<T>> delegateQueryFunction, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "") where T : Entity;
     Task<List<T>> RetrieveListAsync<T>(Func<Xrm, IQueryable<T>> delegateQueryFunction, Func<Entity, T> mapper, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "");
-    Task<List<T>> RetrieveListCachableAsync<T>(string cacheKey, Func<Xrm, IQueryable<T>> delegateQueryFunction, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "") where T : Entity;
-    Task<List<T>> RetrieveListCachableAsync<T>(string cacheKey, Func<Xrm, IQueryable<T>> delegateQueryFunction, Func<Entity, T> mapper, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "");
-    Task<List<Entity>> RetrieveListCachableAsync(string cacheKey, QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "");
-    Task<List<T>> RetrieveListCachableAsync<T>(string cacheKey, QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "") where T : Entity;
+    Task<List<T>?> RetrieveListCachableAsync<T>(string cacheKey, Func<Xrm, IQueryable<T>> delegateQueryFunction, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "") where T : Entity;
+    Task<List<T>?> RetrieveListCachableAsync<T>(string cacheKey, Func<Xrm, IQueryable<T>> delegateQueryFunction, Func<Entity, T> mapper, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "");
+    Task<List<Entity>?> RetrieveListCachableAsync(string cacheKey, QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "");
+    Task<List<T>?> RetrieveListCachableAsync<T>(string cacheKey, QueryExpression query, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "") where T : Entity;
     Task<List<T>> RetrieveMultipleByIdsAsync<T>(IEnumerable<Guid> guids, params Expression<Func<T, object>>[] columnExpressions) where T : Entity;
     Task<List<T>> RetrieveMultipleByIdsAsync<T>(IEnumerable<Guid> guids, string fieldName, params Expression<Func<T, object>>[] columnExpressions) where T : Entity;
     Task<List<T>> RetrieveMultipleByIdsWithCtAsync<T>(IEnumerable<Guid> guids, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions) where T : Entity;

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Linq.Expressions;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -15,12 +16,12 @@ public static class DataverseStaticExtensions
     /// <returns></returns>
     public static string StringOf<T>(this Expression<Func<T, object>> expr)
     {
-        return StaticReflection.GetMemberName<T>(expr).ToLower();
+        return StaticReflection.GetMemberName<T>(expr).ToLower(CultureInfo.InvariantCulture);
     }
 
     public static string StringOf<T>(this Expression<Func<T, EntityReference>> expr)
     {
-        return StaticReflection.GetMemberName<T>(expr).ToLower();
+        return StaticReflection.GetMemberName<T>(expr).ToLower(CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -37,16 +38,16 @@ public static class DataverseStaticExtensions
         return Expression.Lambda<Func<T, object>>(convertedBody, parameter);
     }
 
-    public static string LogicalName<T>() where T : Entity
-    {
-        return (Activator.CreateInstance<T>()).LogicalName;
-    }
+    public static string LogicalName<T>()
+        where T : Entity => Activator.CreateInstance<T>().LogicalName;
 
-    public static EntityReference ToEntityReference<T>(this Guid guid) where T : Entity { return new EntityReference(typeof(T).Name.ToLower(), guid); }
-
+    public static EntityReference ToEntityReference<T>(this Guid entityId)
+        where T : Entity => new EntityReference(typeof(T).Name.ToLower(CultureInfo.InvariantCulture), entityId);
 
     // This one could probably be in XrmExtensions instead
-    public static List<ExecuteMultipleResponseItem> PerformAsBulk<T>(this IOrganizationService service, IEnumerable<T> requests, bool continueOnError = true, int chunkSize = 1000) where T : OrganizationRequest
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "We will allow this here")]
+    public static List<ExecuteMultipleResponseItem> PerformAsBulk<T>(this IOrganizationService service, IEnumerable<T> requests, bool continueOnError = true, int chunkSize = 1000)
+        where T : OrganizationRequest
     {
         var arr = requests.ToArray();
         var splitReqs = from i in Enumerable.Range(0, arr.Length)
@@ -55,43 +56,42 @@ public static class DataverseStaticExtensions
         var resps = new List<ExecuteMultipleResponseItem>();
         foreach (var rs in splitReqs)
         {
-            var req = new ExecuteMultipleRequest();
-            req.Requests = new OrganizationRequestCollection();
+            var req = new ExecuteMultipleRequest
+            {
+                Requests = new OrganizationRequestCollection(),
+            };
             req.Requests.AddRange(rs);
-            req.Settings = new ExecuteMultipleSettings();
-            req.Settings.ContinueOnError = continueOnError;
-            req.Settings.ReturnResponses = true;
-            var resp = service.Execute(req) as ExecuteMultipleResponse;
+            req.Settings = new ExecuteMultipleSettings
+            {
+                ContinueOnError = continueOnError,
+                ReturnResponses = true,
+            };
+            var resp = service.Execute(req) as ExecuteMultipleResponse ?? throw new InvalidOperationException("Unable to obtain ExecuteMultipleResponse");
             resps.AddRange(resp.Responses);
         }
+
         return resps;
     }
 
     /// <summary>
-    /// Pseudo method to take the non-nullable value of a guid (which should never be null).
+    /// Pseudo method to take the non-nullable value of a entityId (which should never be null).
     /// This is to avoid null checks in the code, where stylecop ignores it.
     /// </summary>
-    /// <param name="guid">Input</param>
+    /// <param name="nullableGuid">Input</param>
     /// <returns>Output</returns>
     /// <exception cref="ArgumentException"></exception>
-    public static Guid GetRequiredValue(this Guid? guid)
-    {
-        if (guid == null)
-        {
-            throw new ArgumentException("Guid is null");
-        }
-
-        return guid.Value;
-    }
+    public static Guid GetRequiredValue(this Guid? nullableGuid)
+        => nullableGuid ?? throw new ArgumentException("Guid is null", nameof(nullableGuid));
 
     /// <summary>
-    /// Takes a substring of the string input if it is longer than allowed by the specified attribute. 
+    /// Takes a substring of the string input if it is longer than allowed by the specified attribute.
     /// </summary>
     /// <typeparam name="T">Entity of the attribute</typeparam>
     /// <param name="stringValue">Value to truncate</param>
     /// <param name="attributeExpression">Must specify an attribute of type 'string' (text)</param>
     /// <returns></returns>
-    public static string TruncateIfOutOfRange<T>(string stringValue, Expression<Func<T, object>> attributeExpression) where T : Entity
+    public static string TruncateIfOutOfRange<T>(string stringValue, Expression<Func<T, object>> attributeExpression)
+        where T : Entity
     {
         var maxLength = GetStringAttributeMaxLenth(attributeExpression);
         return stringValue.Length > maxLength ? stringValue.Substring(0, maxLength - 1) : stringValue;
@@ -105,7 +105,9 @@ public static class DataverseStaticExtensions
     /// <returns>Allowd max length</returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public static int GetStringAttributeMaxLenth<T>(Expression<Func<T, object>> attributeExpression) where T : Entity
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "MA0015:Specify the parameter name in ArgumentException", Justification = "We will allow this here")]
+    public static int GetStringAttributeMaxLenth<T>(Expression<Func<T, object>> attributeExpression)
+        where T : Entity
     {
         // Get the attribute/porperty name
         var propertyName = StaticReflection.GetMemberName(attributeExpression);
@@ -115,20 +117,13 @@ public static class DataverseStaticExtensions
 
         // Check if the property exists
         if (property == null)
-        {
             throw new ArgumentException($"Property '{propertyName}' not found in type '{type.FullName}'");
-        }
 
-        // Get the MaxLength attribute
-        MaxLengthAttribute maxLengthAttribute = property.GetCustomAttributes(typeof(MaxLengthAttribute), false)
+        // Get the MaxLength attribute and Check if the MaxLength attribute is found
+        MaxLengthAttribute? maxLengthAttribute = property.GetCustomAttributes(typeof(MaxLengthAttribute), false)
                                                          .Cast<MaxLengthAttribute>()
-                                                         .FirstOrDefault();
-
-        // Check if the MaxLength attribute is found
-        if (maxLengthAttribute == null)
-        {
-            throw new InvalidOperationException($"MaxLength attribute not found on property '{propertyName}'");
-        }
+                                                         .FirstOrDefault()
+                                                         ?? throw new InvalidOperationException($"MaxLength attribute not found on property '{propertyName}'");
 
         // Return the length value from the MaxLength attribute
         return maxLengthAttribute.Length;
@@ -138,6 +133,7 @@ public static class DataverseStaticExtensions
     /// For use in comparing two EntityReference objects, as the default comparison is by reference and not by value.
     /// Use in .Distinct() or .Contains() for example.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "We will allow this here")]
     public sealed class EntityReferenceComparer : IEqualityComparer<EntityReference>
     {
         public bool Equals(EntityReference? x, EntityReference? y)
@@ -149,6 +145,9 @@ public static class DataverseStaticExtensions
             return x.LogicalName == y.LogicalName && x.Id == y.Id;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA1307:Use StringComparer.GetHashCode instead of string.GetHashCode", Justification = "We will allow this here")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "MA0001:Use StringComparer.GetHashCode instead of string.GetHashCode", Justification = "We will allow this here")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "MA0021:Use StringComparer.GetHashCode instead of string.GetHashCode", Justification = "We will allow this here")]
         public int GetHashCode(EntityReference obj)
         {
             if (obj is null)
@@ -157,14 +156,12 @@ public static class DataverseStaticExtensions
             unchecked
             {
                 int hash = 17;
-                hash = hash * 31 + (obj.LogicalName?.GetHashCode() ?? 0);
-                hash = hash * 31 + obj.Id.GetHashCode();
+                hash = (hash * 31) + (obj.LogicalName?.GetHashCode() ?? 0);
+                hash = (hash * 31) + obj.Id.GetHashCode();
                 return hash;
             }
         }
     }
-
-    #region Private classes
 
     /// <summary>
     /// http://joelabrahamsson.com/getting-property-and-method-names-using-static-reflection-in-c/
@@ -174,46 +171,33 @@ public static class DataverseStaticExtensions
         public static string GetMemberName<T>(Expression<Func<T, object>> expression)
         {
             if (expression == null)
-            {
-                throw new ArgumentException(
-                    "The expression cannot be null.");
-            }
-
+                throw new ArgumentNullException(nameof(expression), "The expression cannot be null.");
             return GetMemberName(expression.Body);
         }
 
         public static string GetMemberName<T>(Expression<Func<T, EntityReference>> expression)
         {
             if (expression == null)
-            {
-                throw new ArgumentException(
-                    "The expression cannot be null.");
-            }
-
+                throw new ArgumentNullException(nameof(expression), "The expression cannot be null.");
             return GetMemberName(expression.Body);
         }
 
         private static string GetMemberName(Expression expression)
         {
             if (expression == null)
-            {
-                throw new ArgumentException(
-                    "The expression cannot be null.");
-            }
+                throw new ArgumentNullException(nameof(expression), "The expression cannot be null.");
 
             if (expression is MemberExpression)
             {
                 // Reference type property or field
-                var memberExpression =
-                    (MemberExpression)expression;
+                var memberExpression = (MemberExpression)expression;
                 return memberExpression.Member.Name;
             }
 
             if (expression is MethodCallExpression)
             {
                 // Reference type method
-                var methodCallExpression =
-                    (MethodCallExpression)expression;
+                var methodCallExpression = (MethodCallExpression)expression;
                 return methodCallExpression.Method.Name;
             }
 
@@ -224,22 +208,18 @@ public static class DataverseStaticExtensions
                 return GetMemberName(unaryExpression);
             }
 
-            throw new ArgumentException("Invalid expression");
+            throw new ArgumentException("Invalid expression", nameof(expression));
         }
 
         private static string GetMemberName(UnaryExpression unaryExpression)
         {
             if (unaryExpression.Operand is MethodCallExpression)
             {
-                var methodExpression =
-                    (MethodCallExpression)unaryExpression.Operand;
+                var methodExpression = (MethodCallExpression)unaryExpression.Operand;
                 return methodExpression.Method.Name;
             }
 
-            return ((MemberExpression)unaryExpression.Operand)
-                .Member.Name;
+            return ((MemberExpression)unaryExpression.Operand).Member.Name;
         }
     }
-
-    #endregion
 }

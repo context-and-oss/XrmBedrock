@@ -80,6 +80,8 @@ internal static class DataverseWrapAccess
     /// <summary>
     /// Formats the errormessage for the XRM 2011 Organization service exceptions (FaultException&lt;OrganizationServiceFault&gt;)
     /// </summary>
+    /// <param name="message"></param>
+    /// <param name="e"></param>
     internal static DataverseInteractionException NewExceptionByOrganizationServiceFault(string message, FaultException<OrganizationServiceFault> e)
     {
         return new DataverseInteractionException($"{message} e.Detail.Innerfault = {e.Detail?.InnerFault?.Message}, e.Detail.ErrorCode = 0x{e.Detail?.ErrorCode}, e.Detail.Message = {e.Detail?.Message}, e.Detail.Innerfault.Innerfault = {e.Detail?.InnerFault?.InnerFault?.Message}", e);
@@ -88,6 +90,8 @@ internal static class DataverseWrapAccess
     /// <summary>
     /// Formats the errormessage for a generic WCF FaultException
     /// </summary>
+    /// <param name="message"></param>
+    /// <param name="e"></param>
     internal static DataverseInteractionException NewExceptionByFaultException(string message, FaultException e)
     {
         return new DataverseInteractionException($"{message} Unknown WCF exception thrown. - e.Message = {e.Message}, stacktrace = {e.StackTrace}", e);

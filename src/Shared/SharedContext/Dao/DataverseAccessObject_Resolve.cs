@@ -12,6 +12,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <typeparam name="T">The type of the referenced object</typeparam>
     /// <param name="reference">The entity reference in play</param>
     /// <param name="selector">The selector of the name-column of the table</param>
+    /// <param name="callerMethodName"></param>
     /// <returns>The name of the referred object</returns>
     public string ResolveNameIfEmpty<T>(EntityReference reference, Func<T, string> selector, [CallerMemberName] string callerMethodName = "")
         where T : Entity

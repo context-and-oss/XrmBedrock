@@ -1,5 +1,3 @@
-using Microsoft.Crm.Sdk.Messages;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -14,15 +12,14 @@ public static class QueryProviderExtensions
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields", Justification = "Accepting this here")]
     public static QueryExpression? ToQueryExpression<T>(this IQueryable<T> items)
     {
+        ArgumentNullException.ThrowIfNull(items);
         var queryProvider = items.Provider ?? throw new InvalidOperationException("Unable to obtain QueryProvider");
-
         var queryProviderType = queryProvider.GetType();
         var listType = typeof(List<>);
         var projectionType = GetSubTypeOfQueryProvider(queryProviderType, "Microsoft.Xrm.Sdk.Linq.QueryProvider+Projection");
         var navigationSourceType = GetSubTypeOfQueryProvider(queryProviderType, "Microsoft.Xrm.Sdk.Linq.QueryProvider+NavigationSource");
         var linkLookupType = GetSubTypeOfQueryProvider(queryProviderType, "Microsoft.Xrm.Sdk.Linq.QueryProvider+LinkLookup");
         var linkLookupListType = listType.MakeGenericType(linkLookupType);
-
         object? projection = null;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         var args = new object[] { null, null };
@@ -31,7 +28,6 @@ public static class QueryProviderExtensions
         object? linkLookups = Activator.CreateInstance(linkLookupListType);
         bool throwIfSequenceIsEmpty = false;
         bool throwIfSequenceNotSingle = false;
-
         object?[] arguments =
         [
             items.Expression,
@@ -41,7 +37,6 @@ public static class QueryProviderExtensions
             source,
             linkLookups,
         ];
-
         var getQueryExpressionMethod = queryProviderType.GetMethod(
             "GetQueryExpression",
             bindingAttr: BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public,
@@ -56,17 +51,9 @@ public static class QueryProviderExtensions
                 linkLookupListType.MakeByRefType(),
             },
             null) ?? throw new InvalidOperationException("Unable to obtain QueryExpressionMethod");
-
         return (QueryExpression?)getQueryExpressionMethod.Invoke(queryProvider, arguments);
     }
 
     private static Type GetSubTypeOfQueryProvider(Type queryProviderType, string subTypeString) =>
             queryProviderType.Assembly.GetType(subTypeString) ?? throw new TypeAccessException($"Unable to access {subTypeString}");
-
-    public static string ToXml(this QueryExpression queryExpression, IOrganizationService service)
-    {
-        var request = new QueryExpressionToFetchXmlRequest { Query = queryExpression };
-        var response = (QueryExpressionToFetchXmlResponse)service.Execute(request);
-        return response.FetchXml;
-    }
 }

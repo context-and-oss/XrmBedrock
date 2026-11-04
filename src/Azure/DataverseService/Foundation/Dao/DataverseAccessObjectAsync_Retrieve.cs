@@ -24,7 +24,7 @@ public partial class DataverseAccessObjectAsync
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public Task<T> RetrieveAsync<T>(Guid guidOfElement, params Expression<Func<T, object>>[] columnExpressions)
+    public Task<T> RetrieveAsync<T>(Guid guidOfElement, params Expression<Func<T, object?>>[] columnExpressions)
         where T : Entity
     {
         var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
@@ -41,7 +41,7 @@ public partial class DataverseAccessObjectAsync
     /// <param name="ct"></param>
     /// <param name="columnExpressions"></param>
     /// <returns></returns>
-    public Task<T> RetrieveWithCtAsync<T>(Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
+    public Task<T> RetrieveWithCtAsync<T>(Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object?>>[] columnExpressions)
         where T : Entity
     {
         var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
@@ -160,6 +160,7 @@ public partial class DataverseAccessObjectAsync
     public Task<List<T>> RetrieveMultipleByIdsWithCtAsync<T>(IEnumerable<Guid> guids, string fieldName, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)
         where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName, ct, columnExpressions);
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "Not possible with the params parameters")]
     private Task<T> RetrieveCoreAsync<T>(Guid guidOfElement, CancellationToken ct, string methodethodName, string callerMethodName, params Expression<Func<T, object>>[] columnExpressions)
         where T : Entity
     {
@@ -219,7 +220,7 @@ public partial class DataverseAccessObjectAsync
         using (Xrm xrm = new Xrm(orgServiceAsync))
         {
             var lq = delegateQueryFunction(xrm);
-            var qe = lq.ToQueryExpression<T>();
+            var qe = lq.ToQueryExpression<T>() ?? throw new InvalidOperationException("Unable to get the QueryExpression from the Linq Query");
             var es = await RetrieveMultipleRawAsync(qe, ct).ToListAsync(ct);
             var ts = es.ConvertAll(x => mapper(x));
             return ts;
