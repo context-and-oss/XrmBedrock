@@ -14,6 +14,8 @@ namespace Azure.DataverseService.Foundation.Dao;
 public partial class DataverseAccessObjectAsync
 #pragma warning restore MA0048 // File name must match type name
 {
+    private const int MaxPageSize = 5000;
+
     /// <summary>
     /// Asynchronously retrieves the object with type <typeparamref name="T"/> with the specified guid from XRM
     /// If you truly want the entire object with all attributes then don't specify any columns and it will default to all
@@ -189,24 +191,25 @@ public partial class DataverseAccessObjectAsync
     private async IAsyncEnumerable<Entity> RetrieveMultipleRawAsync(QueryExpression query, [EnumeratorCancellation] CancellationToken ct = default)
     {
         var currentCancellationToken = ct == default ? cancellationToken : ct;
-        var resp = await orgServiceAsync.RetrieveMultipleAsync(query, currentCancellationToken);
+        var pagedQuery = CopyForPaging(query);
+        var resp = await orgServiceAsync.RetrieveMultipleAsync(pagedQuery, currentCancellationToken);
 
         foreach (var entity in resp.Entities)
         {
             yield return entity;
         }
 
-        if (query.PageInfo.PageNumber == 0)
+        if (pagedQuery.PageInfo.PageNumber == 0)
         {
-            query.PageInfo.PageNumber = 1;
+            pagedQuery.PageInfo.PageNumber = 1;
         }
 
         while (resp.MoreRecords)
         {
             currentCancellationToken.ThrowIfCancellationRequested();
-            query.PageInfo.PageNumber++;
-            query.PageInfo.PagingCookie = resp.PagingCookie;
-            resp = await orgServiceAsync.RetrieveMultipleAsync(query, currentCancellationToken);
+            pagedQuery.PageInfo.PageNumber++;
+            pagedQuery.PageInfo.PagingCookie = resp.PagingCookie;
+            resp = await orgServiceAsync.RetrieveMultipleAsync(pagedQuery, currentCancellationToken);
 
             foreach (var entity in resp.Entities)
             {
@@ -221,10 +224,45 @@ public partial class DataverseAccessObjectAsync
         {
             var lq = delegateQueryFunction(xrm);
             var qe = lq.ToQueryExpression<T>() ?? throw new InvalidOperationException("Unable to get the QueryExpression from the Linq Query");
-            var es = await RetrieveMultipleRawAsync(qe, ct).ToListAsync(ct);
+            var maxRows = ApplyLinqPaging(qe);
+            var es = new List<Entity>();
+            await foreach (var entity in RetrieveMultipleRawAsync(qe, ct))
+            {
+                es.Add(entity);
+                if (es.Count == maxRows)
+                    break;
+            }
+
             var ts = es.ConvertAll(x => mapper(x));
             return ts;
         }
+    }
+
+    /// <summary>
+    /// The LINQ translation puts Take(n) in PageInfo.Count and Skip(n) in PageInfo.PageNumber as a row offset, which is not a page number.
+    /// Take is turned into paging that stops after n rows. Skip is rejected, because sending the offset as a page number returns the wrong rows.
+    /// </summary>
+    /// <param name="query">Translated query, PageInfo is replaced when Take is present</param>
+    /// <returns>The maximum number of rows to return, or null when all rows are wanted</returns>
+    private static int? ApplyLinqPaging(QueryExpression query)
+    {
+        var pageInfo = query.PageInfo;
+        if (pageInfo is null)
+            return null;
+
+        if (pageInfo.PageNumber > 0)
+            throw new NotSupportedException("Skip is not supported in LINQ queries passed to RetrieveListAsync.");
+
+        if (pageInfo.Count <= 0)
+            return null;
+
+        var take = pageInfo.Count;
+        query.PageInfo = new PagingInfo
+        {
+            Count = Math.Min(take, MaxPageSize),
+            PageNumber = 1,
+        };
+        return take;
     }
 
     private async Task<List<T>> RetrieveMultipleByIdsRawAsync<T>(string callerMethodName, IEnumerable<Guid> guids, string? fieldName, CancellationToken ct, params Expression<Func<T, object>>[] columnExpressions)

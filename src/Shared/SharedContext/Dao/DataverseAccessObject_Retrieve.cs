@@ -264,31 +264,76 @@ public partial class DataverseAccessObject : IDataverseAccessObject
         }, callerMethodName);
     }
 
+    /// <summary>
+    /// Retrieves all pages of the query. Paging runs on a copy, so the PageInfo of the passed query is left unchanged.
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
     public IEnumerable<Entity> RetrieveMultiple(QueryExpression query)
     {
-        var resp = orgService.RetrieveMultiple(query);
+        var pagedQuery = CopyForPaging(query);
+        var resp = orgService.RetrieveMultiple(pagedQuery);
 
         foreach (var entity in resp.Entities)
         {
             yield return entity;
         }
 
-        if (query.PageInfo.PageNumber == 0)
+        if (pagedQuery.PageInfo.PageNumber == 0)
         {
-            query.PageInfo.PageNumber = 1;
+            pagedQuery.PageInfo.PageNumber = 1;
         }
 
         while (resp.MoreRecords)
         {
-            query.PageInfo.PageNumber++;
-            query.PageInfo.PagingCookie = resp.PagingCookie;
-            resp = orgService.RetrieveMultiple(query);
+            pagedQuery.PageInfo.PageNumber++;
+            pagedQuery.PageInfo.PagingCookie = resp.PagingCookie;
+            resp = orgService.RetrieveMultiple(pagedQuery);
 
             foreach (var entity in resp.Entities)
             {
                 yield return entity;
             }
         }
+    }
+
+    /// <summary>
+    /// Returns a shallow copy of the query with its own PagingInfo, so paging does not change the caller's query.
+    /// Criteria, ColumnSet, link entities and orders are shared with the original and must not be modified on the copy.
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    protected static QueryExpression CopyForPaging(QueryExpression query)
+    {
+        if (query == null)
+            throw new ArgumentNullException(nameof(query));
+
+        var copy = new QueryExpression(query.EntityName)
+        {
+            ColumnSet = query.ColumnSet,
+            Criteria = query.Criteria,
+            DataSource = query.DataSource,
+            Distinct = query.Distinct,
+            ExtensionData = query.ExtensionData,
+            ForceSeek = query.ForceSeek,
+            NoLock = query.NoLock,
+            QueryHints = query.QueryHints,
+            SubQueryExpression = query.SubQueryExpression,
+            TopCount = query.TopCount,
+            PageInfo = query.PageInfo == null
+                ? new PagingInfo()
+                : new PagingInfo
+                {
+                    Count = query.PageInfo.Count,
+                    PageNumber = query.PageInfo.PageNumber,
+                    PagingCookie = query.PageInfo.PagingCookie,
+                    ReturnTotalRecordCount = query.PageInfo.ReturnTotalRecordCount,
+                    ExtensionData = query.PageInfo.ExtensionData,
+                },
+        };
+        copy.LinkEntities.AddRange(query.LinkEntities);
+        copy.Orders.AddRange(query.Orders);
+        return copy;
     }
 
     /// <summary>
