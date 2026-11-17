@@ -11,7 +11,8 @@ public partial class DataverseAccessObjectAsync
 #pragma warning restore MA0048 // File name must match type name
 {
     /// <summary>
-    /// Same as RetrieveAsync<typeparamref name="T"/> but allows the use of caching of the retrieved object by the specified cacheKey
+    /// Same as RetrieveAsync<typeparamref name="T"/> but allows the use of caching of the retrieved object by the specified cacheKey.
+    /// The requested columns are part of the cache entry, so calls with the same cacheKey but different columns are cached separately.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="cacheKey"></param>
@@ -20,10 +21,11 @@ public partial class DataverseAccessObjectAsync
     /// <returns></returns>
     public Task<T?> RetrieveCachableAsync<T>(string cacheKey, Guid guidOfElement, params Expression<Func<T, object?>>[] columnExpressions)
         where T : Entity
-        => cacheHandler.GetOrCreateAsync<T>(cacheKey, () => RetrieveAsync<T>(guidOfElement, columnExpressions));
+        => cacheHandler.GetOrCreateAsync<T>(CacheKeyWithColumns(cacheKey, columnExpressions), () => RetrieveAsync<T>(guidOfElement, columnExpressions));
 
     /// <summary>
-    /// Same as RetrieveWithCtAsync<typeparamref name="T"/> but allows the use of caching of the retrieved object by the specified cacheKey
+    /// Same as RetrieveWithCtAsync<typeparamref name="T"/> but allows the use of caching of the retrieved object by the specified cacheKey.
+    /// The requested columns are part of the cache entry, so calls with the same cacheKey but different columns are cached separately.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="cacheKey"></param>
@@ -33,7 +35,7 @@ public partial class DataverseAccessObjectAsync
     /// <returns></returns>
     public Task<T?> RetrieveCachableWithCtAsync<T>(string cacheKey, Guid guidOfElement, CancellationToken ct, params Expression<Func<T, object?>>[] columnExpressions)
         where T : Entity
-        => cacheHandler.GetOrCreateAsync<T>(cacheKey, () => RetrieveWithCtAsync<T>(guidOfElement, ct, columnExpressions));
+        => cacheHandler.GetOrCreateAsync<T>(CacheKeyWithColumns(cacheKey, columnExpressions), () => RetrieveWithCtAsync<T>(guidOfElement, ct, columnExpressions));
 
     /// <summary>
     /// Same as RetrieveListAsync<typeparamref name="T"/> but allows the use of caching of the retrieved list of objects by the specified cacheKey
@@ -84,4 +86,14 @@ public partial class DataverseAccessObjectAsync
     /// <returns></returns>
     public Task<List<T>?> RetrieveListCachableAsync<T>(string cacheKey, Func<Xrm, IQueryable<T>> delegateQueryFunction, Func<Entity, T> mapper, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
         => cacheHandler.GetOrCreateAsync<List<T>>(cacheKey, () => RetrieveListAsync<T>(delegateQueryFunction, mapper, ct, callerMethodName));
+
+    private static string CacheKeyWithColumns<T>(string cacheKey, Expression<Func<T, object?>>[]? columnExpressions)
+        where T : Entity
+    {
+        var columns = ToColumnNames(columnExpressions);
+        if (columns.Length == 0)
+            return cacheKey;
+
+        return $"{cacheKey}|{string.Join(",", columns.OrderBy(x => x, StringComparer.Ordinal))}";
+    }
 }

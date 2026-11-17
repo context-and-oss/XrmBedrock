@@ -1,5 +1,6 @@
 using DataverseService.Foundation.Dao;
 using Microsoft.Xrm.Sdk;
+using SharedContext.Dao;
 using System.Runtime.CompilerServices;
 
 namespace Azure.DataverseService.Foundation.Dao;
@@ -18,7 +19,7 @@ public partial class DataverseAccessObjectAsync
     public Task DeleteAsync<T>(Guid entityGuid, CancellationToken ct = default, [CallerMemberName] string callerMethodName = "")
         where T : Entity
     {
-        var entityName = typeof(T).Name.ToLowerInvariant();
+        var entityName = DataverseStaticExtensions.LogicalName<T>();
         var deleteOperation = () => orgServiceAsync.DeleteAsync(entityName, entityGuid, ct == default ? cancellationToken : ct);
         return DataverseWrapAccessAsync.GenericDeleteInXrmAsync(logger, nameof(DeleteAsync), callerMethodName, entityGuid, typeof(T).Name, deleteOperation);
     }

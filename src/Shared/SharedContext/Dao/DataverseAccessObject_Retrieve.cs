@@ -45,6 +45,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// Generically retrieves the object with type <typeparamref name="T"/> with the specified guid from XRM
     /// If you truly want the entire object with all attributes use the override with x => x as selector
     /// If you only need a couple of values specify these like "x => x.somecol, x => x.anothercol, ... "
+    /// Only the specified columns are retrieved from Dataverse.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="guid"></param>
@@ -57,14 +58,13 @@ public partial class DataverseAccessObject : IDataverseAccessObject
         if (columnExpressions == null || columnExpressions.Length == 0)
             throw new ArgumentException("There is no specification of attributes to retrieve", nameof(columnExpressions));
 
-        Func<T, T> selector = source =>
+        var callerMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+        var entityLogicalName = DataverseStaticExtensions.LogicalName<T>();
+        var columnSet = new ColumnSet(columnExpressions.Select(x => x.StringOf()).Distinct(StringComparer.Ordinal).ToArray());
+        return DataverseWrapAccess.WrapFunction(logger, $"Retrieve({guid})", typeof(T).ToString(), () =>
         {
-            var ret = Activator.CreateInstance<T>();
-            ret.Id = source.Id;
-            columnExpressions.ToList().ConvertAll(x => x.StringOf()).ToList().ForEach(c => { if (source.Attributes.Contains(c)) ret.Attributes[c] = source.Attributes[c]; });
-            return ret;
-        };
-        return Retrieve<T>(guid, selector, new StackTrace().GetFrame(1).GetMethod().Name);
+            return orgService.Retrieve(entityLogicalName, guid, columnSet).ToEntity<T>();
+        }, callerMethodName);
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 
@@ -8,20 +10,24 @@ namespace SharedContext.Dao;
 
 public static class DataverseStaticExtensions
 {
+    private static readonly ConcurrentDictionary<Type, string> EntityLogicalNames = new();
+
     /// <summary>
-    /// Extracts the attribute name of a lambda expression pointing to an attribute of entity T eg. for x => x.Name, "name" will be extracted
+    /// Extracts the attribute logical name of a lambda expression pointing to an attribute of entity T eg. for x => x.Name, "name" will be extracted.
+    /// The name is read from [AttributeLogicalName] on the property, so x => x.Id gives the primary key column (eg. "accountid").
+    /// Falls back to the lowercased member name when the member has no [AttributeLogicalName].
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="expr"></param>
     /// <returns></returns>
     public static string StringOf<T>(this Expression<Func<T, object>> expr)
     {
-        return StaticReflection.GetMemberName<T>(expr).ToLower(CultureInfo.InvariantCulture);
+        return StaticReflection.GetAttributeLogicalName<T>(expr);
     }
 
     public static string StringOf<T>(this Expression<Func<T, EntityReference>> expr)
     {
-        return StaticReflection.GetMemberName<T>(expr).ToLower(CultureInfo.InvariantCulture);
+        return StaticReflection.GetAttributeLogicalName<T>(expr);
     }
 
     /// <summary>
@@ -38,11 +44,16 @@ public static class DataverseStaticExtensions
         return Expression.Lambda<Func<T, object>>(convertedBody, parameter);
     }
 
+    /// <summary>
+    /// Returns the logical name of entity <typeparamref name="T"/>. The value is resolved once per type and cached.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public static string LogicalName<T>()
-        where T : Entity => Activator.CreateInstance<T>().LogicalName;
+        where T : Entity => EntityLogicalNames.GetOrAdd(typeof(T), _ => Activator.CreateInstance<T>().LogicalName);
 
     public static EntityReference ToEntityReference<T>(this Guid entityId)
-        where T : Entity => new EntityReference(typeof(T).Name.ToLower(CultureInfo.InvariantCulture), entityId);
+        where T : Entity => new EntityReference(LogicalName<T>(), entityId);
 
     // This one could probably be in XrmExtensions instead
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "We will allow this here")]
@@ -168,14 +179,18 @@ public static class DataverseStaticExtensions
     /// </summary>
     private static class StaticReflection
     {
-        public static string GetMemberName<T>(Expression<Func<T, object>> expression)
+        private static readonly ConcurrentDictionary<(Type EntityType, MemberInfo Member), string> AttributeLogicalNames = new();
+
+        public static string GetAttributeLogicalName<T>(LambdaExpression expression)
         {
             if (expression == null)
                 throw new ArgumentNullException(nameof(expression), "The expression cannot be null.");
-            return GetMemberName(expression.Body);
+
+            var member = GetMember(expression.Body);
+            return AttributeLogicalNames.GetOrAdd((typeof(T), member), key => ResolveAttributeLogicalName(key.EntityType, key.Member));
         }
 
-        public static string GetMemberName<T>(Expression<Func<T, EntityReference>> expression)
+        public static string GetMemberName<T>(Expression<Func<T, object>> expression)
         {
             if (expression == null)
                 throw new ArgumentNullException(nameof(expression), "The expression cannot be null.");
@@ -220,6 +235,44 @@ public static class DataverseStaticExtensions
             }
 
             return ((MemberExpression)unaryExpression.Operand).Member.Name;
+        }
+
+        private static MemberInfo GetMember(Expression expression)
+        {
+            switch (expression)
+            {
+                case MemberExpression memberExpression:
+                    return memberExpression.Member;
+                case MethodCallExpression methodCallExpression:
+                    return methodCallExpression.Method;
+                case UnaryExpression unaryExpression:
+                    return GetMember(unaryExpression.Operand);
+                default:
+                    throw new ArgumentException("Invalid expression", nameof(expression));
+            }
+        }
+
+        private static string ResolveAttributeLogicalName(Type entityType, MemberInfo member)
+        {
+            // Expression trees bind overridden properties to their base declaration, eg. x => x.Id gives Entity.Id.
+            // The [AttributeLogicalName] is on the override in the generated class, so look the property up on the entity type.
+            var property = member is PropertyInfo ? FindMostDerivedProperty(entityType, member.Name) ?? member : member;
+            var attribute = property.GetCustomAttributes(typeof(AttributeLogicalNameAttribute), false)
+                .OfType<AttributeLogicalNameAttribute>()
+                .FirstOrDefault();
+            return attribute?.LogicalName ?? member.Name.ToLower(CultureInfo.InvariantCulture);
+        }
+
+        private static PropertyInfo FindMostDerivedProperty(Type type, string name)
+        {
+            for (var current = type; current != null; current = current.BaseType)
+            {
+                var property = current.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                if (property != null)
+                    return property;
+            }
+
+            return null;
         }
     }
 }

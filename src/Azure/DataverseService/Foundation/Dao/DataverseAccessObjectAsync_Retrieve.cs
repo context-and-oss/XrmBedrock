@@ -28,7 +28,7 @@ public partial class DataverseAccessObjectAsync
         where T : Entity
     {
         var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
-        return RetrieveCoreAsync<T>(guidOfElement, cancellationToken, nameof(RetrieveAsync), callerMethodName);
+        return RetrieveCoreAsync<T>(guidOfElement, cancellationToken, nameof(RetrieveAsync), callerMethodName, columnExpressions);
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public partial class DataverseAccessObjectAsync
         where T : Entity
     {
         var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
-        return RetrieveCoreAsync<T>(guidOfElement, ct, nameof(RetrieveWithCtAsync), callerMethodName);
+        return RetrieveCoreAsync<T>(guidOfElement, ct, nameof(RetrieveWithCtAsync), callerMethodName, columnExpressions);
     }
 
     /// <summary>
@@ -161,17 +161,18 @@ public partial class DataverseAccessObjectAsync
         where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName, ct, columnExpressions);
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "Not possible with the params parameters")]
-    private Task<T> RetrieveCoreAsync<T>(Guid guidOfElement, CancellationToken ct, string methodethodName, string callerMethodName, params Expression<Func<T, object>>[] columnExpressions)
+    private Task<T> RetrieveCoreAsync<T>(Guid guidOfElement, CancellationToken ct, string methodName, string callerMethodName, params Expression<Func<T, object?>>[] columnExpressions)
         where T : Entity
     {
         var entityName = DataverseStaticExtensions.LogicalName<T>();
-        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{methodethodName}({guidOfElement})", callerMethodName, async () =>
+        var currentCancellationToken = ct == default ? cancellationToken : ct;
+        return DataverseWrapAccessAsync.GenericRetrieveFromXrmAsync(logger, $"{methodName}({guidOfElement})", callerMethodName, async () =>
         {
-            var cols = columnExpressions.ToList().ConvertAll(x => x.StringOf()).ToArray();
-            var columnSet = cols is null || !cols.Any() ? new ColumnSet(true) : new ColumnSet(cols);
+            var cols = ToColumnNames(columnExpressions);
+            var columnSet = cols.Length == 0 ? new ColumnSet(true) : new ColumnSet(cols);
             try
             {
-                var ret = await orgServiceAsync.RetrieveAsync(entityName, guidOfElement, columnSet, ct);
+                var ret = await orgServiceAsync.RetrieveAsync(entityName, guidOfElement, columnSet, currentCancellationToken);
                 return ret.ToEntity<T>();
             }
             catch (InvalidOperationException ioe)
@@ -179,6 +180,15 @@ public partial class DataverseAccessObjectAsync
                 throw new DataverseInteractionException($"There is no {entityName} with id {guidOfElement} in Xrm", ioe);
             }
         });
+    }
+
+    private static string[] ToColumnNames<T>(Expression<Func<T, object?>>[]? columnExpressions)
+        where T : Entity
+    {
+        if (columnExpressions is null || columnExpressions.Length == 0)
+            return [];
+
+        return columnExpressions.Select(x => x.StringOf()).Distinct(StringComparer.Ordinal).ToArray();
     }
 
     /// <summary>

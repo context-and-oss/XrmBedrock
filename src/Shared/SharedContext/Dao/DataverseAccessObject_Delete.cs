@@ -13,6 +13,6 @@ public partial class DataverseAccessObject : IDataverseAccessObject
     /// <param name="callerMethodName"></param>
     public void Delete<T>(Guid entityGuid, [CallerMemberName] string callerMethodName = "") where T : Entity
     {
-        DataverseWrapAccess.WrapAction(logger, $"Delete({entityGuid})", typeof(T).Name, () => orgService.Delete(typeof(T).Name.ToLower(), entityGuid), callerMethodName);
+        DataverseWrapAccess.WrapAction(logger, $"Delete({entityGuid})", typeof(T).Name, () => orgService.Delete(DataverseStaticExtensions.LogicalName<T>(), entityGuid), callerMethodName);
     }
 }
