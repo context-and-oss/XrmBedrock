@@ -1,5 +1,6 @@
 #pragma warning disable SA1210 // Using order varies with project name after template replacement
 using Azure.DataverseService.Foundation.Dao;
+using DataverseService.Foundation.Dao;
 using Microsoft.Extensions.Logging;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
@@ -34,18 +35,24 @@ public class DaoPagingTests : TestBase
         accounts.Should().HaveCount(expected);
     }
 
-    [Fact]
-    public async Task RetrieveListAsyncLinqTakeSendsOneRequest()
+    // The substitute keeps MoreRecords true, so a second request would show up if TopCount did not stop paging
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task RetrieveListAsyncLinqTakeSendsOneTopCountRequest(int take)
     {
         var service = Substitute.For<IOrganizationServiceAsync2>();
         service.RetrieveMultipleAsync(Arg.Any<QueryBase>(), Arg.Any<CancellationToken>())
             .Returns(callInfo => Page((QueryBase)callInfo[0]));
         var dao = new DataverseAccessObjectAsync(service, Substitute.For<ILogger>());
 
-        var accounts = await dao.RetrieveListAsync<Account>(xrm => xrm.AccountSet.Take(2));
+        var accounts = await dao.RetrieveListAsync<Account>(xrm => xrm.AccountSet.Take(take));
 
-        accounts.Should().HaveCount(2);
+        accounts.Should().HaveCount(take);
         await service.Received(1).RetrieveMultipleAsync(Arg.Any<QueryBase>(), Arg.Any<CancellationToken>());
+        await service.Received(1).RetrieveMultipleAsync(
+            Arg.Is<QueryBase>(q => ((QueryExpression)q).TopCount == take && ((QueryExpression)q).PageInfo.Count == 0 && ((QueryExpression)q).PageInfo.PageNumber == 0),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -56,6 +63,43 @@ public class DaoPagingTests : TestBase
         var act = () => AdminDao.RetrieveListAsync<Account>(xrm => xrm.AccountSet.Where(a => a.AccountNumber == batch).Skip(2).Take(2));
 
         return act.Should().ThrowAsync<DataverseInteractionException>().WithInnerException(typeof(NotSupportedException));
+    }
+
+    [Fact]
+    public Task RetrieveListAsyncLinqTakeAboveMaxTopCountThrows()
+    {
+        var act = () => AdminDao.RetrieveListAsync<Account>(xrm => xrm.AccountSet.Take(5001));
+
+        return act.Should().ThrowAsync<DataverseInteractionException>().WithInnerException(typeof(NotSupportedException));
+    }
+
+    [Fact]
+    public void ToQueryExpressionMovesTakeToTopCount()
+    {
+        using var xrm = new Xrm(Substitute.For<IOrganizationService>());
+
+        var withTake = xrm.AccountSet.Where(a => a.Name == "x").Take(5000).ToQueryExpression();
+        var withoutTake = xrm.AccountSet.Where(a => a.Name == "x").ToQueryExpression();
+
+        withTake!.TopCount.Should().Be(5000);
+        withTake.PageInfo.Count.Should().Be(0);
+        withTake.PageInfo.PageNumber.Should().Be(0);
+        withoutTake!.TopCount.Should().BeNull();
+        withoutTake.PageInfo.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public void ToQueryExpressionRejectsSkipAndLargeTake()
+    {
+        using var xrm = new Xrm(Substitute.For<IOrganizationService>());
+
+        var skip = () => xrm.AccountSet.Skip(5).ToQueryExpression();
+        var skipTake = () => xrm.AccountSet.Skip(5).Take(5).ToQueryExpression();
+        var largeTake = () => xrm.AccountSet.Take(5001).ToQueryExpression();
+
+        skip.Should().Throw<NotSupportedException>().WithMessage("Skip()*");
+        skipTake.Should().Throw<NotSupportedException>().WithMessage("Skip()*");
+        largeTake.Should().Throw<NotSupportedException>().WithMessage("Take()*");
     }
 
     // XrmMockup returns MoreRecords = false for every page, so multi page reads use a substitute that pages like Dataverse
@@ -145,7 +189,7 @@ public class DaoPagingTests : TestBase
     private static EntityCollection Page(QueryBase queryBase)
     {
         var query = (QueryExpression)queryBase;
-        var size = query.PageInfo.Count;
+        var size = query.TopCount ?? (query.PageInfo.Count > 0 ? query.PageInfo.Count : 5000);
         var page = Math.Max(query.PageInfo.PageNumber, 1);
         var first = (page - 1) * size;
         var rows = Enumerable.Range(first, Math.Clamp(SeededRows - first, 0, size))

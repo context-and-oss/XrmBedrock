@@ -9,6 +9,8 @@ namespace DataverseService.Foundation.Dao;
 /// </summary>
 public static class QueryProviderExtensions
 {
+    private const int MaxTopCount = 5000;
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3011:Reflection should not be used to increase accessibility of classes, methods, or fields", Justification = "Accepting this here")]
     public static QueryExpression? ToQueryExpression<T>(this IQueryable<T> items)
     {
@@ -51,7 +53,37 @@ public static class QueryProviderExtensions
                 linkLookupListType.MakeByRefType(),
             },
             null) ?? throw new InvalidOperationException("Unable to obtain QueryExpressionMethod");
-        return (QueryExpression?)getQueryExpressionMethod.Invoke(queryProvider, arguments);
+        var queryExpression = (QueryExpression?)getQueryExpressionMethod.Invoke(queryProvider, arguments);
+        return queryExpression is null ? null : ApplySkipTake(queryExpression);
+    }
+
+    /// <summary>
+    /// The SDK's internal translation leaves Take(n) in PageInfo.Count and the Skip(n) row offset in PageInfo.PageNumber.
+    /// The SDK's own execution rewrites these before sending, which is bypassed here, so they are rewritten into a query Dataverse understands.
+    /// Take(n) becomes TopCount. Skip and Take above <see cref="MaxTopCount"/> throw <see cref="NotSupportedException"/>.
+    /// </summary>
+    /// <param name="queryExpression">Query returned by the SDK translation</param>
+    /// <returns>The same query with Take moved to TopCount and an empty PageInfo</returns>
+    private static QueryExpression ApplySkipTake(QueryExpression queryExpression)
+    {
+        var pageInfo = queryExpression.PageInfo;
+        if (pageInfo is null)
+            return queryExpression;
+
+        if (pageInfo.PageNumber > 0)
+            throw new NotSupportedException("Skip() is not supported by ToQueryExpression. Use a QueryExpression and set PageInfo.");
+
+        var take = pageInfo.Count;
+        if (take > MaxTopCount)
+            throw new NotSupportedException($"Take() above {MaxTopCount} is not supported by ToQueryExpression. Use a QueryExpression and page it.");
+
+        if (take > 0)
+        {
+            queryExpression.TopCount = take;
+            queryExpression.PageInfo = new PagingInfo();
+        }
+
+        return queryExpression;
     }
 
     private static Type GetSubTypeOfQueryProvider(Type queryProviderType, string subTypeString) =>
