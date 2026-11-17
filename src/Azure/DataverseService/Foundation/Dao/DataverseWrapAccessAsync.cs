@@ -37,6 +37,7 @@ public static class DataverseWrapAccessAsync
         }
         #region Standard Exceptionhandling for XRM access
         catch (InvalidPluginExecutionException) { throw; }
+        catch (DataverseInteractionException) { throw; }
         catch (FaultException<OrganizationServiceFault> e) { throw NewExceptionByOrganizationServiceFault(errorMsg, e); }
         catch (FaultException e) { throw NewExceptionByFaultException(errorMsg, e); }
         catch (System.Exception e) { throw NewExceptionByDefaultException(errorMsg, e); }
@@ -89,6 +90,7 @@ public static class DataverseWrapAccessAsync
         }
         #region Standard Exceptionhandling for XRM access
         catch (InvalidPluginExecutionException) { throw; }
+        catch (DataverseInteractionException) { throw; }
         catch (FaultException<OrganizationServiceFault> e) { throw NewExceptionByOrganizationServiceFault(errorMsg, e); }
         catch (FaultException e) { throw NewExceptionByFaultException(errorMsg, e); }
         catch (System.Exception e) { throw NewExceptionByDefaultException(errorMsg, e); }
@@ -139,6 +141,7 @@ public static class DataverseWrapAccessAsync
         }
         #region Standard Exceptionhandling for XRM access
         catch (InvalidPluginExecutionException) { throw; }
+        catch (DataverseInteractionException) { throw; }
         catch (FaultException<OrganizationServiceFault> e) { throw NewExceptionByOrganizationServiceFault(errorMsg, e); }
         catch (FaultException e) { throw NewExceptionByFaultException(errorMsg, e); }
         catch (System.Exception e) { throw NewExceptionByDefaultException(errorMsg, e); }
@@ -190,6 +193,7 @@ public static class DataverseWrapAccessAsync
         }
         #region Standard Exceptionhandling for XRM access
         catch (InvalidPluginExecutionException) { throw; }
+        catch (DataverseInteractionException) { throw; }
         catch (FaultException<OrganizationServiceFault> e) { throw NewExceptionByOrganizationServiceFault(errorMsg, e); }
         catch (FaultException e) { throw NewExceptionByFaultException(errorMsg, e); }
         catch (System.Exception e) { throw NewExceptionByDefaultException(errorMsg, e); }
@@ -237,6 +241,7 @@ public static class DataverseWrapAccessAsync
         }
         #region Standard Exceptionhandling for XRM access
         catch (InvalidPluginExecutionException) { throw; }
+        catch (DataverseInteractionException) { throw; }
         catch (FaultException<OrganizationServiceFault> e) { throw NewExceptionByOrganizationServiceFault(errorMsg, e); }
         catch (FaultException e) { throw NewExceptionByFaultException(errorMsg, e); }
         catch (System.Exception e) { throw NewExceptionByDefaultException(errorMsg, e); }

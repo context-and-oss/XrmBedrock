@@ -23,6 +23,7 @@ internal static class DataverseWrapAccess
         }
         #region Standard Exceptionhandling for XRM access
         catch (InvalidPluginExecutionException) { throw; }
+        catch (DataverseInteractionException) { throw; }
         catch (FaultException<OrganizationServiceFault> e) { throw NewExceptionByOrganizationServiceFault(errorMsg, e); }
         catch (FaultException e) { throw NewExceptionByFaultException(errorMsg, e); }
         catch (Exception e) { throw NewExceptionByDefaultException(errorMsg, e); }
@@ -46,6 +47,7 @@ internal static class DataverseWrapAccess
         }
         #region Standard Exceptionhandling for XRM access
         catch (InvalidPluginExecutionException) { throw; }
+        catch (DataverseInteractionException) { throw; }
         catch (FaultException<OrganizationServiceFault> e) { throw NewExceptionByOrganizationServiceFault(errorMsg, e); }
         catch (FaultException e) { throw NewExceptionByFaultException(errorMsg, e); }
         catch (Exception e) { throw NewExceptionByDefaultException(errorMsg, e); }
