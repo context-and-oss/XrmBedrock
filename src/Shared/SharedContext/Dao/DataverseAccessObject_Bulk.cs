@@ -36,7 +36,7 @@ public partial class DataverseAccessObject : IDataverseAccessObject
             {
                 var builder = new StringBuilder();
                 builder.AppendLine($"Bulk operation {nameof(T)} failed {errors.Count} times, with :");
-                errors.ForEach(e => builder.AppendLine($"[{e.Timestamp}] Errorcode: {e.ErrorCode} - {e.ErrorDetails} - {e.Message}"));
+                errors.ForEach(e => builder.AppendLine($"[{e.Timestamp}] Errorcode: 0x{e.ErrorCode:X8} - {e.ErrorDetails} - {e.Message}"));
                 throw new DataverseInteractionException(builder.ToString());
             }
         }
