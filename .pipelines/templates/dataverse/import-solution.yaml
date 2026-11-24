@@ -4,6 +4,7 @@ steps:
   - task: UseDotNet@2
     inputs:
       version: 10.x
+
   - task: AzureCLI@2
     displayName: Reconcile with SolutionExtender and import with PAC
     inputs:
@@ -41,17 +42,20 @@ steps:
         Invoke-Tool solutionextender (@('post-import', '--zip', $zip, '--apply', '--reassign-workflows') + $connection)
     env:
       DataverseUrl: $(DataverseUrl)
+
   - template: publish-all.yaml
     parameters:
       workingDirectory: $(Pipeline.Workspace)/Dataverse
       environment: ${{ parameters.environment }}
+
   - task: AzureCLI@2
     displayName: Link target environment plugin managed identity
+    condition: always()
     inputs:
       azureSubscription: ${{ upper(parameters.environment) }}
       scriptType: pscore
       scriptLocation: inlineScript
-      workingDirectory: '$(Pipeline.Workspace)/Dataverse'
+      workingDirectory: "$(Pipeline.Workspace)/Dataverse"
       inlineScript: |
         dotnet tool restore
         if ($LASTEXITCODE -ne 0) { throw 'Tool restore failed' }
