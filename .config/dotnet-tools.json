@@ -9,7 +9,7 @@
       ]
     },
     "xrmcontext": {
-      "version": "4.0.0-beta.26",
+      "version": "4.0.0-beta.28",
       "commands": [
         "xrmcontext"
       ],
@@ -23,14 +23,14 @@
       "rollForward": false
     },
     "xrmsync": {
-      "version": "1.0.0-preview.27",
+      "version": "1.0.1",
       "commands": [
         "xrmsync"
       ],
       "rollForward": false
     },
     "xrmmockup.metadatagenerator": {
-      "version": "1.2.0",
+      "version": "1.2.1",
       "commands": [
         "xrmmockup-metadata"
       ],
