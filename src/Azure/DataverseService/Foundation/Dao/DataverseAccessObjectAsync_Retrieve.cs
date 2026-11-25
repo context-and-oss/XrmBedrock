@@ -28,7 +28,7 @@ public partial class DataverseAccessObjectAsync
         where T : Entity
     {
         var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
-        return RetrieveCoreAsync<T>(guidOfElement, cancellationToken, nameof(RetrieveAsync), callerMethodName);
+        return RetrieveCoreAsync<T>(guidOfElement, cancellationToken, nameof(RetrieveAsync), callerMethodName, columnExpressions);
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public partial class DataverseAccessObjectAsync
         where T : Entity
     {
         var callerMethodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified";
-        return RetrieveCoreAsync<T>(guidOfElement, ct, nameof(RetrieveWithCtAsync), callerMethodName);
+        return RetrieveCoreAsync<T>(guidOfElement, ct, nameof(RetrieveWithCtAsync), callerMethodName, columnExpressions);
     }
 
     /// <summary>
@@ -161,7 +161,7 @@ public partial class DataverseAccessObjectAsync
         where T : Entity => RetrieveMultipleByIdsRawAsync(new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "CallerUnindentified", guids, fieldName, ct, columnExpressions);
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "Not possible with the params parameters")]
-    private Task<T> RetrieveCoreAsync<T>(Guid guidOfElement, CancellationToken ct, string methodethodName, string callerMethodName, params Expression<Func<T, object>>[] columnExpressions)
+    private Task<T> RetrieveCoreAsync<T>(Guid guidOfElement, CancellationToken ct, string methodethodName, string callerMethodName, params Expression<Func<T, object?>>[] columnExpressions)
         where T : Entity
     {
         var entityName = DataverseStaticExtensions.LogicalName<T>();
