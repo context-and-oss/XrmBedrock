@@ -125,6 +125,11 @@ do not need exported handlers on the `WebResources` global.
 - HTML linting enforces accessibility, including labels, image alternative text,
   explicit button types and valid headings. TypeScript uses DataverseHtml's type-aware,
   promise, unsafe DOM/eval/regexp, import, naming and complexity checks.
+- TypeScript form and page scripts use the same readability rules: separate functions,
+  classes and braced control flow with blank lines, but keep one-line guards compact.
+  Run `npm run lint:fix` to apply spacing fixes. For form attributes, let the generated
+  XDT form context infer `getAttribute` types, or narrow the returned value at runtime
+  if the field isn't in the generated form. Explicit `getAttribute<T>()` is disallowed.
 
 ### Build, preview and removal
 
@@ -134,6 +139,7 @@ Run these commands from `src/Dataverse/WebResources`:
 npm run lint
 npm run typecheck
 npm run build                    # typecheck + strict lint + scripts and HTML
+npm test                         # bundle and ESLint regression tests
 npm run watch                    # rebuild scripts and HTML on save
 ```
 

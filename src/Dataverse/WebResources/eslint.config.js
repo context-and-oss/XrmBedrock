@@ -9,6 +9,7 @@
 
 import js from "@eslint/js";
 import html from "@html-eslint/eslint-plugin";
+import stylistic from "@stylistic/eslint-plugin";
 import checkFile from "eslint-plugin-check-file";
 import importPlugin from "eslint-plugin-import-x";
 import noUnsanitized from "eslint-plugin-no-unsanitized";
@@ -19,11 +20,20 @@ import unicorn from "eslint-plugin-unicorn";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+const functionVariable = "VariableDeclaration:has(> VariableDeclarator:matches([init.type='ArrowFunctionExpression'], [init.type='FunctionExpression']))";
+const readableBlocks = [
+  "function", "class", "switch", "try",
+  { selector: ":matches(ExportNamedDeclaration, ExportDefaultDeclaration):has(> :matches(FunctionDeclaration, ClassDeclaration))" },
+  { selector: `${functionVariable}, ExportNamedDeclaration:has(> ${functionVariable})` },
+  { selector: "IfStatement:has(> BlockStatement), :matches(ForStatement, ForInStatement, ForOfStatement, WhileStatement, DoWhileStatement)[body.type='BlockStatement']" },
+];
+
 // Shared DataverseHtml plugins and rules for webresource source files.
 export const sharedPlugins = {
   // Registered as `import` so the rules read `import/order` and friends, even though the
   // package is the maintained `-x` fork. Its `settings` keys stay `import-x/*`.
   import: importPlugin,
+  "@stylistic": stylistic,
   promise,
   unicorn,
   sonarjs,
@@ -33,6 +43,27 @@ export const sharedPlugins = {
 };
 
 export const sharedRules = {
+  // ── Readability: separate functions and braced control flow from adjacent code ──
+  "@stylistic/padding-line-between-statements": [
+    "error",
+    { blankLine: "always", prev: "*", next: readableBlocks },
+    { blankLine: "always", prev: readableBlocks, next: "*" },
+  ],
+  "@stylistic/no-multiple-empty-lines": ["error", { max: 1, maxBOF: 0, maxEOF: 0 }],
+  "@stylistic/lines-between-class-members": "error",
+  "@stylistic/keyword-spacing": "error",
+  "@stylistic/space-before-blocks": "error",
+
+  // Use generated XDT form overloads, or narrow a value at runtime for fields
+  // that are absent from the generated form. A generic here is an unchecked claim.
+  "no-restricted-syntax": [
+    "error",
+    {
+      selector: "CallExpression[typeArguments] > MemberExpression.callee:matches([computed=false][property.name='getAttribute'], [computed=true][property.value='getAttribute'])",
+      message: "Do not pass type arguments to getAttribute. Use an XDT form context for inference or narrow the returned value.",
+    },
+  ],
+
   // ── Imports ──
   "import/no-duplicates": "error",
   "import/no-cycle": "error",
